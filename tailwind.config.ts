@@ -78,6 +78,11 @@ export default {
           ring: "hsl(var(--sidebar-ring))",
         },
       },
+      boxShadow: {
+        soft: "0 4px 20px -4px hsl(0 0% 0% / 0.08)",
+        medium: "0 8px 30px -8px hsl(0 0% 0% / 0.12)",
+        botanical: "0 8px 30px -8px hsl(113 38% 25% / 0.25)",
+      },
       borderRadius: {
         lg: "var(--radius)",
         md: "calc(var(--radius) - 2px)",
