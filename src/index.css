@@ -137,11 +137,11 @@
   }
 
   .btn-botanical {
-    @apply bg-primary text-primary-foreground hover:bg-botanical-light transition-all duration-300 shadow-botanical hover:shadow-lg hover:-translate-y-0.5;
+    @apply bg-primary text-primary-foreground transition-all duration-300 shadow-botanical hover:shadow-lg hover:-translate-y-0.5;
   }
 
   .btn-petal {
-    @apply bg-secondary text-secondary-foreground hover:bg-petal-light transition-all duration-300;
+    @apply bg-secondary text-secondary-foreground transition-all duration-300;
   }
 
   .card-organic {
