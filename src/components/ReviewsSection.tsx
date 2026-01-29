@@ -3,28 +3,29 @@ import { Star, Quote } from "lucide-react";
 
 const reviews = [
   {
-    name: "María García",
-    role: "Novia",
+    name: "Marcos Melian",
     rating: 5,
-    text: "Hicieron el ramo de mis sueños. El equipo entendió perfectamente mi visión y lo superaron con creces. ¡Gracias por hacer mi boda aún más especial!",
+    text: "Nos ofrecieron la solución adaptada a nuestras ideas, se ajustaron al presupuesto y el resultado fue impecable. Totalmente recomendables.",
   },
   {
-    name: "Carlos Rodríguez",
-    role: "Cliente habitual",
+    name: "Omaira Tavío Méndez",
     rating: 5,
-    text: "Siempre compro aquí las flores para mi madre. La calidad es excepcional y el trato muy cercano. Un clásico de La Laguna que no decepciona.",
+    text: "Los resultados han sido maravillosos. Buena mano de obra + buenos materiales = arreglos de ensueño!",
   },
   {
-    name: "Ana Fernández",
-    role: "Organizadora de eventos",
+    name: "Rafael Ferrera",
     rating: 5,
-    text: "Colaboramos en varios eventos y siempre cumplen con profesionalidad y creatividad. Sus centros de mesa son espectaculares. 100% recomendados.",
+    text: "Muy buena experiencia, rapidez, limpieza y unos acabados espectaculares, totalmente recomendables.",
   },
   {
-    name: "Pedro Martín",
-    role: "Cliente",
+    name: "Juan Félix Rodríguez",
     rating: 5,
-    text: "Encargué un arreglo para un momento difícil y lo trataron con mucha delicadeza. Entrega puntual y presentación impecable. Muy agradecido.",
+    text: "Resultado perfecto y calidad precio garantizado.",
+  },
+  {
+    name: "Manuel Díaz",
+    rating: 5,
+    text: "¡Calidad excelente!",
   },
 ];
 
@@ -66,11 +67,8 @@ const ReviewsSection = () => {
               <p className="text-charcoal-light text-sm leading-relaxed mb-3 line-clamp-4">
                 "{review.text}"
               </p>
-              <div>
-                <div className="font-serif font-medium text-charcoal text-sm">
-                  {review.name}
-                </div>
-                <div className="text-xs text-charcoal-light">{review.role}</div>
+              <div className="font-serif font-medium text-charcoal text-sm">
+                {review.name}
               </div>
             </motion.div>
           ))}
