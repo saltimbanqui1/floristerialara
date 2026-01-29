@@ -30,58 +30,47 @@ const reviews = [
 
 const ReviewsSection = () => {
   return (
-    <section className="section-padding bg-cream-dark" id="resenas">
-      <div className="container-narrow">
+    <section className="py-10 md:py-14 bg-cream-dark" id="resenas">
+      <div className="container-narrow px-4 md:px-8">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 15 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-16"
+          transition={{ duration: 0.5 }}
+          className="text-center mb-8"
         >
-          <span className="text-primary font-medium text-sm uppercase tracking-wider">
-            Testimonios
-          </span>
-          <h2 className="heading-section text-charcoal mt-4 mb-6">
-            Lo que dicen nuestros clientes
-          </h2>
-          <div className="flex items-center justify-center gap-2 mb-4">
+          <div className="flex items-center justify-center gap-1 mb-2">
             {[...Array(5)].map((_, i) => (
-              <Star key={i} className="w-6 h-6 fill-petal text-petal" />
+              <Star key={i} className="w-5 h-5 fill-petal text-petal" />
             ))}
-            <span className="ml-2 text-charcoal font-medium">
-              4.8 en Google Reviews
+            <span className="ml-2 text-charcoal font-medium text-sm">
+              4.8 en Google
             </span>
           </div>
+          <h2 className="text-2xl md:text-3xl font-serif font-medium text-charcoal">
+            Lo que dicen nuestros clientes
+          </h2>
         </motion.div>
 
-        <div className="grid md:grid-cols-2 gap-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
           {reviews.map((review, index) => (
             <motion.div
               key={review.name}
-              initial={{ opacity: 0, y: 30 }}
+              initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
-              className="card-organic p-8 border border-border relative"
+              transition={{ duration: 0.4, delay: index * 0.05 }}
+              className="card-organic p-4 border border-border relative"
             >
-              <Quote className="absolute top-6 right-6 w-10 h-10 text-primary/10" />
-              <div className="flex gap-1 mb-4">
-                {[...Array(review.rating)].map((_, i) => (
-                  <Star
-                    key={i}
-                    className="w-5 h-5 fill-petal text-petal"
-                  />
-                ))}
-              </div>
-              <p className="text-charcoal-light leading-relaxed mb-6">
+              <Quote className="absolute top-3 right-3 w-6 h-6 text-primary/10" />
+              <p className="text-charcoal-light text-sm leading-relaxed mb-3 line-clamp-4">
                 "{review.text}"
               </p>
               <div>
-                <div className="font-serif font-medium text-charcoal">
+                <div className="font-serif font-medium text-charcoal text-sm">
                   {review.name}
                 </div>
-                <div className="text-sm text-charcoal-light">{review.role}</div>
+                <div className="text-xs text-charcoal-light">{review.role}</div>
               </div>
             </motion.div>
           ))}

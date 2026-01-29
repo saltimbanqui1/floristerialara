@@ -26,25 +26,27 @@ const badges = [
 
 const TrustBadges = () => {
   return (
-    <section className="py-12 bg-cream-dark border-y border-border">
+    <section className="py-6 bg-cream-dark border-y border-border">
       <div className="container-narrow px-4">
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {badges.map((badge, index) => (
             <motion.div
               key={badge.title}
-              initial={{ opacity: 0, y: 20 }}
+              initial={{ opacity: 0, y: 10 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
-              className="flex flex-col items-center text-center"
+              transition={{ duration: 0.4, delay: index * 0.05 }}
+              className="flex items-center gap-3"
             >
-              <div className="w-14 h-14 rounded-full bg-primary/10 flex items-center justify-center mb-4">
-                <badge.icon className="w-7 h-7 text-primary" />
+              <div className="w-10 h-10 rounded-full bg-primary/10 flex items-center justify-center flex-shrink-0">
+                <badge.icon className="w-5 h-5 text-primary" />
               </div>
-              <h4 className="font-serif font-medium text-charcoal mb-1">
-                {badge.title}
-              </h4>
-              <p className="text-sm text-charcoal-light">{badge.description}</p>
+              <div>
+                <h4 className="font-serif font-medium text-charcoal text-sm leading-tight">
+                  {badge.title}
+                </h4>
+                <p className="text-xs text-charcoal-light">{badge.description}</p>
+              </div>
             </motion.div>
           ))}
         </div>

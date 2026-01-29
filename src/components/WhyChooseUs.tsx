@@ -36,83 +36,62 @@ const reasons = [
 
 const WhyChooseUs = () => {
   return (
-    <section className="section-padding bg-cream-dark" id="nosotros">
-      <div className="container-narrow">
-        <div className="grid lg:grid-cols-2 gap-12 lg:gap-20 items-center">
+    <section className="py-10 md:py-14 bg-cream-dark" id="nosotros">
+      <div className="container-narrow px-4 md:px-8">
+        <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
           {/* Left Content */}
           <motion.div
-            initial={{ opacity: 0, x: -30 }}
+            initial={{ opacity: 0, x: -20 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
+            transition={{ duration: 0.5 }}
           >
             <span className="text-primary font-medium text-sm uppercase tracking-wider">
               ¿Por Qué Elegirnos?
             </span>
-            <h2 className="heading-section text-charcoal mt-4 mb-6">
+            <h2 className="text-2xl md:text-3xl font-serif font-medium text-charcoal mt-3 mb-4">
               Más de 35 años enamorando a La Laguna
             </h2>
-            <p className="text-body text-charcoal-light mb-8">
-              Floristería Lara no es solo una tienda de flores, es un referente
-              en el centro histórico de San Cristóbal de La Laguna. Generaciones
-              de familias confían en nosotros para sus momentos más especiales.
+            <p className="text-charcoal-light mb-6">
+              Floristería Lara es un referente en el centro histórico. Generaciones
+              de familias confían en nosotros.
             </p>
 
-            <div className="flex flex-wrap gap-4">
-              <div className="text-center px-6 py-4 bg-background rounded-xl border border-border">
-                <div className="text-4xl font-serif font-bold text-primary">
-                  35+
-                </div>
-                <div className="text-sm text-charcoal-light">Años</div>
+            <div className="flex flex-wrap gap-3">
+              <div className="text-center px-4 py-3 bg-background rounded-lg border border-border">
+                <div className="text-2xl font-serif font-bold text-primary">35+</div>
+                <div className="text-xs text-charcoal-light">Años</div>
               </div>
-              <div className="text-center px-6 py-4 bg-background rounded-xl border border-border">
-                <div className="text-4xl font-serif font-bold text-primary">
-                  10K+
-                </div>
-                <div className="text-sm text-charcoal-light">
-                  Clientes felices
-                </div>
+              <div className="text-center px-4 py-3 bg-background rounded-lg border border-border">
+                <div className="text-2xl font-serif font-bold text-primary">10K+</div>
+                <div className="text-xs text-charcoal-light">Clientes</div>
               </div>
-              <div className="text-center px-6 py-4 bg-background rounded-xl border border-border">
-                <div className="text-4xl font-serif font-bold text-primary">
-                  4.8
-                </div>
-                <div className="text-sm text-charcoal-light">
-                  Valoración Google
-                </div>
+              <div className="text-center px-4 py-3 bg-background rounded-lg border border-border">
+                <div className="text-2xl font-serif font-bold text-primary">4.8</div>
+                <div className="text-xs text-charcoal-light">Google</div>
               </div>
             </div>
           </motion.div>
 
           {/* Right Content - Reasons List */}
           <motion.div
-            initial={{ opacity: 0, x: 30 }}
+            initial={{ opacity: 0, x: 20 }}
             whileInView={{ opacity: 1, x: 0 }}
             viewport={{ once: true }}
-            transition={{ duration: 0.6 }}
-            className="space-y-6"
+            transition={{ duration: 0.5 }}
+            className="grid grid-cols-2 gap-3"
           >
             {reasons.map((reason, index) => (
-              <motion.div
-                key={reason.title}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.4, delay: index * 0.1 }}
-                className="flex gap-4"
-              >
-                <div className="flex-shrink-0 w-8 h-8 rounded-full bg-primary flex items-center justify-center">
-                  <Check className="w-5 h-5 text-primary-foreground" />
+              <div key={reason.title} className="flex gap-2 items-start">
+                <div className="flex-shrink-0 w-5 h-5 rounded-full bg-primary flex items-center justify-center mt-0.5">
+                  <Check className="w-3 h-3 text-primary-foreground" />
                 </div>
                 <div>
-                  <h4 className="font-serif font-medium text-charcoal mb-1">
+                  <h4 className="font-serif font-medium text-charcoal text-sm leading-tight">
                     {reason.title}
                   </h4>
-                  <p className="text-sm text-charcoal-light">
-                    {reason.description}
-                  </p>
                 </div>
-              </motion.div>
+              </div>
             ))}
           </motion.div>
         </div>

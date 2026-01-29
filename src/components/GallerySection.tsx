@@ -17,36 +17,32 @@ const galleryItems = [
 
 const GallerySection = () => {
   return (
-    <section className="section-padding bg-background" id="galeria">
-      <div className="container-narrow">
+    <section className="py-10 md:py-14 bg-background" id="galeria">
+      <div className="container-narrow px-4 md:px-8">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 15 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-16"
+          transition={{ duration: 0.5 }}
+          className="text-center mb-8"
         >
           <span className="text-primary font-medium text-sm uppercase tracking-wider">
             Nuestro Trabajo
           </span>
-          <h2 className="heading-section text-charcoal mt-4 mb-6">
+          <h2 className="text-2xl md:text-3xl font-serif font-medium text-charcoal mt-3">
             Galería de creaciones
           </h2>
-          <p className="text-body text-charcoal-light max-w-2xl mx-auto">
-            Cada arreglo floral es una obra de arte única, diseñada con pasión y
-            cuidado artesanal.
-          </p>
         </motion.div>
 
-        <div className="grid grid-cols-2 md:grid-cols-3 gap-4 md:gap-6">
+        <div className="grid grid-cols-3 md:grid-cols-6 gap-2 md:gap-3">
           {galleryItems.map((item, index) => (
             <motion.div
               key={item.title}
               initial={{ opacity: 0, scale: 0.95 }}
               whileInView={{ opacity: 1, scale: 1 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
-              className="group relative overflow-hidden rounded-2xl aspect-[3/4] cursor-pointer"
+              transition={{ duration: 0.4, delay: index * 0.05 }}
+              className="group relative overflow-hidden rounded-xl aspect-square cursor-pointer"
             >
               <img
                 src={item.image}
