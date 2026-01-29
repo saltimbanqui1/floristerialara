@@ -22,11 +22,6 @@ const reviews = [
     rating: 5,
     text: "Resultado perfecto y calidad precio garantizado.",
   },
-  {
-    name: "Manuel Díaz",
-    rating: 5,
-    text: "¡Calidad excelente!",
-  },
 ];
 
 const ReviewsSection = () => {
