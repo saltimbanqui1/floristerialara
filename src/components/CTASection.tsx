@@ -1,5 +1,5 @@
 import { motion } from "framer-motion";
-import { Phone, MapPin, Clock, ExternalLink } from "lucide-react";
+import { Phone, MapPin, Clock, Instagram, Facebook } from "lucide-react";
 import { Button } from "@/components/ui/button";
 
 const CTASection = () => {
@@ -20,7 +20,7 @@ const CTASection = () => {
             Llámanos o envíanos un WhatsApp.
           </p>
 
-          <div className="flex flex-col sm:flex-row gap-3 justify-center mb-8">
+          <div className="flex flex-col sm:flex-row gap-3 justify-center mb-6">
             <Button
               asChild
               className="bg-primary-foreground text-primary hover:bg-primary-foreground/90 px-6"
@@ -43,6 +43,28 @@ const CTASection = () => {
                 WhatsApp
               </a>
             </Button>
+          </div>
+
+          {/* Social Media Links */}
+          <div className="flex justify-center gap-4 mb-6">
+            <a
+              href="https://www.instagram.com/floristerialara#"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 text-primary-foreground/80 hover:text-primary-foreground transition-colors"
+            >
+              <Instagram className="w-5 h-5" />
+              <span className="text-sm">Instagram</span>
+            </a>
+            <a
+              href="https://www.facebook.com/people/Flores-Lara/100063768323294/#"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="flex items-center gap-2 text-primary-foreground/80 hover:text-primary-foreground transition-colors"
+            >
+              <Facebook className="w-5 h-5" />
+              <span className="text-sm">Facebook</span>
+            </a>
           </div>
 
           {/* Contact Info - Compact */}
