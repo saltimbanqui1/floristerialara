@@ -22,40 +22,43 @@ const HeroSection = () => {
   };
 
   return (
-    <section className="relative min-h-screen flex items-center overflow-hidden bg-background">
-      {/* Background Pattern */}
-      <div className="absolute inset-0 opacity-5">
-        <div className="absolute top-20 left-10 w-72 h-72 bg-primary rounded-full blur-3xl" />
-        <div className="absolute bottom-20 right-10 w-96 h-96 bg-secondary rounded-full blur-3xl" />
+    <section className="relative min-h-[85vh] flex items-center overflow-hidden">
+      {/* Hero Image Background */}
+      <div className="absolute inset-0">
+        <img
+          src={heroImage}
+          alt="Arreglo floral elegante de Floristería Lara"
+          className="w-full h-full object-cover"
+        />
+        <div className="absolute inset-0 bg-gradient-to-r from-background/95 via-background/80 to-background/40" />
       </div>
 
-      <div className="container-narrow w-full section-padding relative z-10">
-        <div className="grid lg:grid-cols-2 gap-12 lg:gap-16 items-center">
+      <div className="container-narrow w-full py-12 md:py-16 px-4 md:px-8 relative z-10">
+        <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
           {/* Left Content */}
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
             transition={{ duration: 0.8 }}
-            className="space-y-6"
+            className="space-y-5"
           >
-            <div className="inline-flex items-center gap-2 px-4 py-2 rounded-full bg-cream-dark">
+            <div className="inline-flex items-center gap-2 px-3 py-1.5 rounded-full bg-background/80 backdrop-blur-sm border border-border">
               <MapPin className="w-4 h-4 text-primary" />
               <span className="text-sm font-medium text-charcoal">
                 La Laguna, Tenerife
               </span>
             </div>
 
-            <h1 className="heading-display text-charcoal text-balance">
+            <h1 className="text-3xl md:text-4xl lg:text-5xl font-serif font-medium tracking-tight text-charcoal text-balance">
               Flores que expresan lo que las palabras no pueden
             </h1>
 
-            <p className="text-body text-charcoal-light max-w-lg">
+            <p className="text-base text-charcoal-light max-w-lg">
               Desde 1985, creando arreglos florales artesanales en el corazón de
-              San Cristóbal de La Laguna. Tradición, elegancia y cercanía en
-              cada ramo.
+              San Cristóbal de La Laguna.
             </p>
 
-            <div className="flex flex-wrap gap-6 pt-4">
+            <div className="flex flex-wrap gap-5 pt-2">
               <a
                 href="tel:922251318"
                 className="inline-flex items-center gap-2 text-primary font-medium hover:underline"
@@ -70,25 +73,16 @@ const HeroSection = () => {
             </div>
           </motion.div>
 
-          {/* Right Content - Form & Image */}
+          {/* Right Content - Form */}
           <motion.div
             initial={{ opacity: 0, x: 30 }}
             animate={{ opacity: 1, x: 0 }}
             transition={{ duration: 0.8, delay: 0.2 }}
-            className="relative"
           >
-            {/* Hero Image */}
-            <div className="absolute -top-8 -right-8 w-full h-full">
-              <img
-                src={heroImage}
-                alt="Arreglo floral elegante de Floristería Lara"
-                className="w-full h-full object-cover rounded-3xl opacity-30 lg:opacity-50"
-              />
-            </div>
 
             {/* Contact Form Card */}
-            <div className="relative card-organic p-8 border border-border">
-              <h3 className="text-2xl font-serif font-medium text-charcoal mb-2">
+            <div className="card-organic p-6 border border-border bg-background/95 backdrop-blur-sm">
+              <h3 className="text-xl font-serif font-medium text-charcoal mb-1">
                 Solicita tu presupuesto
               </h3>
               <p className="text-charcoal-light text-sm mb-6">

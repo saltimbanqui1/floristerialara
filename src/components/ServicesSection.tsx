@@ -41,43 +41,42 @@ const ServicesSection = () => {
     <section className="section-padding bg-background" id="servicios">
       <div className="container-narrow">
         <motion.div
-          initial={{ opacity: 0, y: 20 }}
+          initial={{ opacity: 0, y: 15 }}
           whileInView={{ opacity: 1, y: 0 }}
           viewport={{ once: true }}
-          transition={{ duration: 0.6 }}
-          className="text-center mb-16"
+          transition={{ duration: 0.5 }}
+          className="text-center mb-10"
         >
           <span className="text-primary font-medium text-sm uppercase tracking-wider">
             Nuestros Servicios
           </span>
-          <h2 className="heading-section text-charcoal mt-4 mb-6">
+          <h2 className="text-2xl md:text-3xl font-serif font-medium text-charcoal mt-3 mb-4">
             Creamos momentos inolvidables
           </h2>
-          <p className="text-body text-charcoal-light max-w-2xl mx-auto">
-            Desde íntimos detalles hasta grandes celebraciones, nuestro equipo
-            de floristas expertos convierte tus ideas en realidad.
+          <p className="text-charcoal-light max-w-2xl mx-auto">
+            Desde íntimos detalles hasta grandes celebraciones.
           </p>
         </motion.div>
 
-        <div className="grid md:grid-cols-2 gap-8">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
           {services.map((service, index) => (
             <motion.div
               key={service.title}
-              initial={{ opacity: 0, y: 30 }}
+              initial={{ opacity: 0, y: 20 }}
               whileInView={{ opacity: 1, y: 0 }}
               viewport={{ once: true }}
-              transition={{ duration: 0.5, delay: index * 0.1 }}
-              className="card-organic p-8 border border-border group hover:border-primary/30 transition-colors"
+              transition={{ duration: 0.4, delay: index * 0.05 }}
+              className="card-organic p-5 border border-border group hover:border-primary/30 transition-colors text-center"
             >
               <div
-                className={`w-16 h-16 rounded-2xl ${service.color} flex items-center justify-center mb-6 group-hover:scale-110 transition-transform`}
+                className={`w-12 h-12 rounded-xl ${service.color} flex items-center justify-center mb-4 mx-auto group-hover:scale-110 transition-transform`}
               >
-                <service.icon className={`w-8 h-8 ${service.iconColor}`} />
+                <service.icon className={`w-6 h-6 ${service.iconColor}`} />
               </div>
-              <h3 className="text-2xl font-serif font-medium text-charcoal mb-3">
+              <h3 className="text-lg font-serif font-medium text-charcoal mb-2">
                 {service.title}
               </h3>
-              <p className="text-charcoal-light leading-relaxed">
+              <p className="text-sm text-charcoal-light leading-relaxed">
                 {service.description}
               </p>
             </motion.div>
