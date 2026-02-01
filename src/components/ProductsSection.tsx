@@ -6,6 +6,27 @@ import { ShoppingBag, ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
 import LegalConfirmModal from "@/components/legal/LegalConfirmModal";
 
+// Product images
+import presenciaImg from "@/assets/products/presencia.jpg";
+import cedroImg from "@/assets/products/cedro.jpg";
+import olivoImg from "@/assets/products/olivo.jpg";
+import amorImg from "@/assets/products/amor.jpg";
+import suaveImg from "@/assets/products/suave.jpg";
+import ebanoImg from "@/assets/products/ebano.jpg";
+import piceaImg from "@/assets/products/picea.jpg";
+import esplendorImg from "@/assets/products/esplendor.jpg";
+
+const productImages: Record<string, string> = {
+  presencia: presenciaImg,
+  cedro: cedroImg,
+  olivo: olivoImg,
+  amor: amorImg,
+  suave: suaveImg,
+  ebano: ebanoImg,
+  picea: piceaImg,
+  esplendor: esplendorImg,
+};
+
 interface Product {
   id: string;
   name: string;
@@ -98,11 +119,13 @@ const ProductsSection = () => {
                   viewport={{ once: true }}
                   transition={{ duration: 0.4, delay: index * 0.05 }}
                 >
-                  <Card className="card-organic hover:shadow-medium transition-all duration-300 group overflow-hidden">
+                    <Card className="card-organic hover:shadow-medium transition-all duration-300 group overflow-hidden">
                     <div className="aspect-square bg-muted relative overflow-hidden">
-                      <div className="absolute inset-0 flex items-center justify-center text-muted-foreground text-sm">
-                        Foto próximamente
-                      </div>
+                      <img 
+                        src={productImages[product.id] || product.image_url} 
+                        alt={product.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
                       {product.original_price && (
                         <div className="absolute top-2 right-2 bg-petal text-charcoal text-xs font-medium px-2 py-1 rounded">
                           Oferta
