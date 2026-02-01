@@ -2,9 +2,11 @@ import { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { Menu, X, Phone } from "lucide-react";
 import { Button } from "@/components/ui/button";
+import CartButton from "@/components/cart/CartButton";
 
 const navLinks = [
   { href: "#servicios", label: "Servicios" },
+  { href: "#productos", label: "Productos" },
   { href: "#nosotros", label: "Nosotros" },
   { href: "#galeria", label: "Galería" },
   { href: "#resenas", label: "Reseñas" },
@@ -35,6 +37,7 @@ const Header = () => {
                 {link.label}
               </a>
             ))}
+            <CartButton />
             <Button asChild className="btn-botanical">
               <a href="tel:922251318">
                 <Phone className="w-4 h-4 mr-2" />
@@ -44,13 +47,16 @@ const Header = () => {
           </nav>
 
           {/* Mobile Menu Button */}
-          <button
-            className="md:hidden p-2 text-charcoal"
-            onClick={() => setIsMenuOpen(!isMenuOpen)}
-            aria-label="Toggle menu"
-          >
-            {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-          </button>
+          <div className="md:hidden flex items-center gap-2">
+            <CartButton />
+            <button
+              className="p-2 text-charcoal"
+              onClick={() => setIsMenuOpen(!isMenuOpen)}
+              aria-label="Toggle menu"
+            >
+              {isMenuOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+            </button>
+          </div>
         </div>
 
         {/* Mobile Navigation */}
