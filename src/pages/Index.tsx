@@ -4,7 +4,6 @@ import TrustBadges from "@/components/TrustBadges";
 import ServicesSection from "@/components/ServicesSection";
 import WhyChooseUs from "@/components/WhyChooseUs";
 import ProductsSection from "@/components/ProductsSection";
-import GallerySection from "@/components/GallerySection";
 import ReviewsSection from "@/components/ReviewsSection";
 import CTASection from "@/components/CTASection";
 import Footer from "@/components/Footer";
@@ -19,7 +18,6 @@ const Index = () => {
         <ServicesSection />
         <WhyChooseUs />
         <ProductsSection />
-        <GallerySection />
         <ReviewsSection />
         <CTASection />
       </main>
