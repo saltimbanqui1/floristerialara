@@ -1,26 +1,9 @@
 import { motion } from "framer-motion";
-import { Phone, MapPin, Clock } from "lucide-react";
+import { Phone, MapPin, Clock, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
-import { Input } from "@/components/ui/input";
-import { Textarea } from "@/components/ui/textarea";
 import heroImage from "@/assets/hero-flowers.jpg";
-import { useState } from "react";
 
 const HeroSection = () => {
-  const [formData, setFormData] = useState({
-    name: "",
-    phone: "",
-    message: "",
-  });
-
-  const handleSubmit = (e: React.FormEvent) => {
-    e.preventDefault();
-    const whatsappMessage = encodeURIComponent(
-      `¡Hola! Soy ${formData.name}. ${formData.message}. Mi teléfono es ${formData.phone}`
-    );
-    window.open(`https://wa.me/34922251318?text=${whatsappMessage}`, "_blank");
-  };
-
   return (
     <section className="relative min-h-[85vh] flex items-center overflow-hidden">
       {/* Hero Image Background */}
@@ -34,8 +17,7 @@ const HeroSection = () => {
       </div>
 
       <div className="container-narrow w-full py-12 md:py-16 px-4 md:px-8 relative z-10">
-        <div className="grid lg:grid-cols-2 gap-8 lg:gap-12 items-center">
-          {/* Left Content */}
+        <div className="max-w-2xl">
           <motion.div
             initial={{ opacity: 0, y: 30 }}
             animate={{ opacity: 1, y: 0 }}
@@ -71,61 +53,22 @@ const HeroSection = () => {
                 <span className="text-sm">L-V: 9:00 - 20:00</span>
               </div>
             </div>
-          </motion.div>
 
-          {/* Right Content - Form */}
-          <motion.div
-            initial={{ opacity: 0, x: 30 }}
-            animate={{ opacity: 1, x: 0 }}
-            transition={{ duration: 0.8, delay: 0.2 }}
-          >
-
-            {/* Contact Form Card */}
-            <div className="card-organic p-6 border border-border bg-background/95 backdrop-blur-sm">
-              <h3 className="text-xl font-serif font-medium text-charcoal mb-1">
-                Solicita tu presupuesto
-              </h3>
-              <p className="text-charcoal-light text-sm mb-6">
-                Te respondemos en menos de 2 horas
-              </p>
-
-              <form onSubmit={handleSubmit} className="space-y-4">
-                <Input
-                  placeholder="Tu nombre"
-                  value={formData.name}
-                  onChange={(e) =>
-                    setFormData({ ...formData, name: e.target.value })
-                  }
-                  className="bg-cream border-border focus:ring-primary"
-                  required
-                />
-                <Input
-                  placeholder="Tu teléfono"
-                  type="tel"
-                  value={formData.phone}
-                  onChange={(e) =>
-                    setFormData({ ...formData, phone: e.target.value })
-                  }
-                  className="bg-cream border-border focus:ring-primary"
-                  required
-                />
-                <Textarea
-                  placeholder="¿Qué necesitas? (Ej: ramo para cumpleaños, decoración boda...)"
-                  value={formData.message}
-                  onChange={(e) =>
-                    setFormData({ ...formData, message: e.target.value })
-                  }
-                  className="bg-cream border-border focus:ring-primary resize-none"
-                  rows={3}
-                  required
-                />
-                <Button
-                  type="submit"
-                  className="w-full btn-botanical text-lg py-6"
+            {/* WhatsApp Direct Button - No form, no user input */}
+            <div className="pt-4">
+              <Button
+                asChild
+                className="btn-botanical text-lg py-6 px-8"
+              >
+                <a
+                  href="https://wa.me/34922251318"
+                  target="_blank"
+                  rel="noopener noreferrer"
                 >
-                  Enviar por WhatsApp
-                </Button>
-              </form>
+                  <MessageCircle className="w-5 h-5 mr-2" />
+                  Contactar por WhatsApp
+                </a>
+              </Button>
             </div>
           </motion.div>
         </div>
