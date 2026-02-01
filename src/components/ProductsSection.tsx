@@ -2,10 +2,9 @@ import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ShoppingCart, Plus } from "lucide-react";
-import { useCart } from "@/contexts/CartContext";
+import { ShoppingBag, ExternalLink } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
-import { toast } from "sonner";
+import LegalConfirmModal from "@/components/legal/LegalConfirmModal";
 
 interface Product {
   id: string;
@@ -21,7 +20,8 @@ interface Product {
 const ProductsSection = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
-  const { addItem } = useCart();
+  const [selectedProduct, setSelectedProduct] = useState<Product | null>(null);
+  const [showLegalModal, setShowLegalModal] = useState(false);
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -54,110 +54,115 @@ const ProductsSection = () => {
     fetchProducts();
   }, []);
 
-  const handleAddToCart = (product: Product) => {
-    addItem({
-      id: product.id,
-      name: product.name,
-      price: Number(product.price),
-      originalPrice: product.original_price ? Number(product.original_price) : undefined,
-      size: product.size,
-      externalBuyUrl: product.external_buy_url,
-    });
-    toast.success(`${product.name} añadido al carrito`);
+  const handleBuyClick = (product: Product) => {
+    setSelectedProduct(product);
+    setShowLegalModal(true);
   };
 
   return (
-    <section id="productos" className="section-padding bg-cream">
-      <div className="container-narrow px-4 md:px-8">
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5 }}
-          className="text-center mb-8"
-        >
-          <h2 className="text-2xl md:text-3xl font-serif font-medium text-charcoal mb-2">
-            Nuestros Productos
-          </h2>
-          <p className="text-charcoal-light max-w-xl mx-auto text-sm">
-            Selecciona el arreglo que más te guste y añádelo al carrito
-          </p>
-        </motion.div>
+    <>
+      <section id="productos" className="section-padding bg-cream">
+        <div className="container-narrow px-4 md:px-8">
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5 }}
+            className="text-center mb-8"
+          >
+            <h2 className="text-2xl md:text-3xl font-serif font-medium text-charcoal mb-2">
+              Nuestros Productos
+            </h2>
+            <p className="text-charcoal-light max-w-xl mx-auto text-sm">
+              Selecciona el arreglo que más te guste y realiza tu pedido
+            </p>
+          </motion.div>
 
-        {loading ? (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-            {[...Array(8)].map((_, i) => (
-              <div key={i} className="animate-pulse">
-                <div className="aspect-square bg-muted rounded-lg mb-2" />
-                <div className="h-4 bg-muted rounded w-3/4 mb-1" />
-                <div className="h-4 bg-muted rounded w-1/2" />
-              </div>
-            ))}
-          </div>
-        ) : (
-          <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-            {products.map((product, index) => (
-              <motion.div
-                key={product.id}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.4, delay: index * 0.05 }}
-              >
-                <Card className="card-organic hover:shadow-medium transition-all duration-300 group overflow-hidden">
-                  <div className="aspect-square bg-muted relative overflow-hidden">
-                    <div className="absolute inset-0 flex items-center justify-center text-muted-foreground text-sm">
-                      Foto próximamente
-                    </div>
-                    {product.original_price && (
-                      <div className="absolute top-2 right-2 bg-petal text-charcoal text-xs font-medium px-2 py-1 rounded">
-                        Oferta
+          {loading ? (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+              {[...Array(8)].map((_, i) => (
+                <div key={i} className="animate-pulse">
+                  <div className="aspect-square bg-muted rounded-lg mb-2" />
+                  <div className="h-4 bg-muted rounded w-3/4 mb-1" />
+                  <div className="h-4 bg-muted rounded w-1/2" />
+                </div>
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
+              {products.map((product, index) => (
+                <motion.div
+                  key={product.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.4, delay: index * 0.05 }}
+                >
+                  <Card className="card-organic hover:shadow-medium transition-all duration-300 group overflow-hidden">
+                    <div className="aspect-square bg-muted relative overflow-hidden">
+                      <div className="absolute inset-0 flex items-center justify-center text-muted-foreground text-sm">
+                        Foto próximamente
                       </div>
-                    )}
-                  </div>
-                  <CardContent className="p-3">
-                    <h3 className="font-serif font-medium text-charcoal text-sm mb-1">
-                      {product.name}
-                    </h3>
-                    <div className="flex items-center gap-2 mb-3">
-                      <span className="text-primary font-semibold text-sm">
-                        {Number(product.price).toFixed(2)} €
-                      </span>
                       {product.original_price && (
-                        <span className="text-charcoal-light line-through text-xs">
-                          {Number(product.original_price).toFixed(2)} €
-                        </span>
+                        <div className="absolute top-2 right-2 bg-petal text-charcoal text-xs font-medium px-2 py-1 rounded">
+                          Oferta
+                        </div>
                       )}
                     </div>
-                    <Button
-                      onClick={() => handleAddToCart(product)}
-                      className="w-full btn-botanical text-sm py-2 gap-2"
-                      size="sm"
-                    >
-                      <Plus className="w-4 h-4" />
-                      Añadir al carrito
-                    </Button>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
-          </div>
-        )}
+                    <CardContent className="p-3">
+                      <h3 className="font-serif font-medium text-charcoal text-sm mb-1">
+                        {product.name}
+                      </h3>
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="text-primary font-semibold text-sm">
+                          {Number(product.price).toFixed(2)} €
+                        </span>
+                        {product.original_price && (
+                          <span className="text-charcoal-light line-through text-xs">
+                            {Number(product.original_price).toFixed(2)} €
+                          </span>
+                        )}
+                      </div>
+                      <Button
+                        onClick={() => handleBuyClick(product)}
+                        className="w-full text-sm py-2 gap-2 bg-[#D4AF37] hover:bg-[#C4A030] text-white font-semibold shadow-md transition-all duration-300"
+                        size="sm"
+                      >
+                        <ShoppingBag className="w-4 h-4" />
+                        Comprar
+                        <ExternalLink className="w-3 h-3" />
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              ))}
+            </div>
+          )}
 
-        <motion.div
-          initial={{ opacity: 0, y: 20 }}
-          whileInView={{ opacity: 1, y: 0 }}
-          viewport={{ once: true }}
-          transition={{ duration: 0.5, delay: 0.3 }}
-          className="text-center mt-8"
-        >
-          <div className="inline-flex items-center gap-2 text-sm text-charcoal-light">
-            <ShoppingCart className="w-4 h-4" />
-            <span>Haz clic en el icono del carrito para ver tu pedido</span>
-          </div>
-        </motion.div>
-      </div>
-    </section>
+          <motion.div
+            initial={{ opacity: 0, y: 20 }}
+            whileInView={{ opacity: 1, y: 0 }}
+            viewport={{ once: true }}
+            transition={{ duration: 0.5, delay: 0.3 }}
+            className="text-center mt-8"
+          >
+            <p className="text-sm text-charcoal-light flex items-center justify-center gap-2">
+              <ExternalLink className="w-4 h-4" />
+              Las compras se finalizan en nuestra tienda online segura
+            </p>
+          </motion.div>
+        </div>
+      </section>
+
+      {selectedProduct && (
+        <LegalConfirmModal
+          open={showLegalModal}
+          onOpenChange={setShowLegalModal}
+          productName={selectedProduct.name}
+          externalUrl={selectedProduct.external_buy_url || "https://www.floristerialaraonline.com"}
+        />
+      )}
+    </>
   );
 };
 
