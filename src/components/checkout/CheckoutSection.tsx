@@ -1,8 +1,8 @@
-import { useState, useEffect } from "react";
+import { useState, useEffect, useMemo } from "react";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { Calendar as CalendarIcon, Truck, Store, Copy, Check } from "lucide-react";
+import { Calendar as CalendarIcon, Truck, Store, Copy, Check, AlertCircle, MapPin } from "lucide-react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -17,6 +17,7 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
+import { Alert, AlertDescription } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 
@@ -47,6 +48,68 @@ export interface SelectedProduct {
   price: number;
   description: string;
 }
+
+// Shipping zones configuration
+const SHIPPING_ZONES = {
+  // Zona 1 - Local (La Laguna centro, Santa Cruz centro)
+  zone1: {
+    postalCodes: ["38200", "38201", "38202", "38203", "38001", "38002", "38003"],
+    cost: 3.00,
+    name: "Local",
+  },
+  // Zona 2 - Estándar (Área metropolitana)
+  zone2: {
+    postalCodes: ["38004", "38005", "38006", "38007", "38008", "38009", "38010", "38107", "38108", "38109", "38110", "38111", "38204", "38205", "38206", "38207", "38208", "38250", "38260", "38270", "38280", "38290", "38291", "38292", "38293", "38294", "38295", "38296", "38297", "38310", "38320", "38330", "38340", "38350", "38355", "38358", "38359"],
+    cost: 7.00,
+    name: "Estándar",
+  },
+  // Zona 3 - Alejada (resto de la provincia)
+  zone3: {
+    cost: 12.00,
+    name: "Alejada",
+  },
+};
+
+// Function to calculate shipping cost based on postal code
+const getShippingInfo = (postalCode: string, isPickup: boolean): { 
+  cost: number; 
+  zoneName: string; 
+  isValid: boolean; 
+  errorMessage?: string;
+} => {
+  // Pickup is always free
+  if (isPickup) {
+    return { cost: 0, zoneName: "Recogida", isValid: true };
+  }
+
+  // Validate postal code format
+  if (!postalCode || postalCode.length < 5) {
+    return { cost: 0, zoneName: "", isValid: true }; // No error yet, still typing
+  }
+
+  // Check if it's a Tenerife postal code (starts with 38)
+  if (!postalCode.startsWith("38")) {
+    return { 
+      cost: 0, 
+      zoneName: "", 
+      isValid: false, 
+      errorMessage: "Lo sentimos, no realizamos entregas a domicilio fuera de esta provincia, pero puedes elegir recogida en tienda." 
+    };
+  }
+
+  // Check Zone 1
+  if (SHIPPING_ZONES.zone1.postalCodes.includes(postalCode)) {
+    return { cost: SHIPPING_ZONES.zone1.cost, zoneName: SHIPPING_ZONES.zone1.name, isValid: true };
+  }
+
+  // Check Zone 2
+  if (SHIPPING_ZONES.zone2.postalCodes.includes(postalCode)) {
+    return { cost: SHIPPING_ZONES.zone2.cost, zoneName: SHIPPING_ZONES.zone2.name, isValid: true };
+  }
+
+  // Default to Zone 3 for any other 38xxx postal code
+  return { cost: SHIPPING_ZONES.zone3.cost, zoneName: SHIPPING_ZONES.zone3.name, isValid: true };
+};
 
 // Validation schema
 const checkoutSchema = z.object({
@@ -82,8 +145,6 @@ interface CheckoutSectionProps {
   onClearProduct: () => void;
 }
 
-const DELIVERY_COST = 7.00;
-
 const CheckoutSection = ({ selectedProduct, onClearProduct }: CheckoutSectionProps) => {
   const { toast } = useToast();
   const [copiedBilling, setCopiedBilling] = useState(false);
@@ -110,12 +171,21 @@ const CheckoutSection = ({ selectedProduct, onClearProduct }: CheckoutSectionPro
   });
 
   const deliveryType = form.watch("deliveryType");
+  const shippingPostalCode = form.watch("shippingPostalCode") || "";
   const isPickup = deliveryType === "pickup";
+
+  // Calculate shipping based on postal code
+  const shippingInfo = useMemo(() => {
+    return getShippingInfo(shippingPostalCode, isPickup);
+  }, [shippingPostalCode, isPickup]);
 
   // Calculate totals
   const subtotal = selectedProduct?.price || 0;
-  const deliveryCost = isPickup ? 0 : DELIVERY_COST;
+  const deliveryCost = shippingInfo.cost;
   const total = subtotal + deliveryCost;
+
+  // Check if order can be placed
+  const canPlaceOrder = isPickup || (shippingInfo.isValid && shippingPostalCode.length >= 5);
 
   // Copy billing to shipping
   const copyBillingToShipping = () => {
@@ -140,6 +210,15 @@ const CheckoutSection = ({ selectedProduct, onClearProduct }: CheckoutSectionPro
         });
         return;
       }
+
+      if (!shippingInfo.isValid) {
+        toast({
+          title: "Código postal no válido",
+          description: "No realizamos envíos a esta zona. Por favor, elige recogida en tienda.",
+          variant: "destructive",
+        });
+        return;
+      }
     }
 
     toast({
@@ -147,7 +226,7 @@ const CheckoutSection = ({ selectedProduct, onClearProduct }: CheckoutSectionPro
       description: "Te contactaremos pronto para confirmar tu pedido.",
     });
     
-    console.log("Order data:", { product: selectedProduct, formData: data, total });
+    console.log("Order data:", { product: selectedProduct, formData: data, shippingInfo, total });
   };
 
   if (!selectedProduct) {
@@ -449,11 +528,12 @@ const CheckoutSection = ({ selectedProduct, onClearProduct }: CheckoutSectionPro
                         name="shippingPostalCode"
                         render={({ field }) => (
                           <FormItem>
-                            <FormLabel>Código Postal</FormLabel>
+                            <FormLabel>Código Postal {!isPickup && "*"}</FormLabel>
                             <FormControl>
                               <Input 
                                 placeholder="38200" 
                                 disabled={isPickup}
+                                maxLength={5}
                                 {...field} 
                               />
                             </FormControl>
@@ -462,6 +542,32 @@ const CheckoutSection = ({ selectedProduct, onClearProduct }: CheckoutSectionPro
                         )}
                       />
                     </div>
+
+                    {/* Shipping Cost Feedback */}
+                    {!isPickup && shippingPostalCode.length >= 5 && (
+                      <motion.div
+                        initial={{ opacity: 0, y: -10 }}
+                        animate={{ opacity: 1, y: 0 }}
+                        transition={{ duration: 0.3 }}
+                      >
+                        {shippingInfo.isValid ? (
+                          <div className="flex items-center gap-2 p-3 bg-primary/10 rounded-lg border border-primary/20">
+                            <MapPin className="h-4 w-4 text-primary flex-shrink-0" />
+                            <span className="text-sm text-foreground">
+                              Gastos de envío para esta zona: <strong className="text-primary">{shippingInfo.cost.toFixed(2)} €</strong>
+                              <span className="text-muted-foreground ml-1">({shippingInfo.zoneName})</span>
+                            </span>
+                          </div>
+                        ) : (
+                          <Alert variant="destructive" className="border-destructive/50 bg-destructive/10">
+                            <AlertCircle className="h-4 w-4" />
+                            <AlertDescription className="text-sm">
+                              {shippingInfo.errorMessage}
+                            </AlertDescription>
+                          </Alert>
+                        )}
+                      </motion.div>
+                    )}
                   </CardContent>
                 </Card>
               </motion.div>
@@ -506,8 +612,9 @@ const CheckoutSection = ({ selectedProduct, onClearProduct }: CheckoutSectionPro
                                   <Truck className="h-4 w-4 text-primary" />
                                   <span className="font-medium">Entrega a domicilio</span>
                                 </div>
+                                <p className="text-xs text-muted-foreground mt-1">El coste varía según la zona</p>
                               </Label>
-                              <span className="font-medium text-primary">+7,00 €</span>
+                              <span className="font-medium text-primary text-sm">desde 3,00 €</span>
                             </div>
 
                             <div className={cn(
@@ -680,38 +787,89 @@ const CheckoutSection = ({ selectedProduct, onClearProduct }: CheckoutSectionPro
               </Card>
             </motion.div>
 
-            {/* Order Total */}
+            {/* Order Total with Cost Breakdown */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 0.4 }}
             >
-              <Card className="card-organic bg-primary text-primary-foreground">
-                <CardContent className="p-6">
-                  <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-                    <div className="space-y-2">
-                      <div className="flex justify-between md:gap-8 text-primary-foreground/80">
-                        <span>Subtotal</span>
-                        <span>{subtotal.toFixed(2)} €</span>
-                      </div>
-                      <div className="flex justify-between md:gap-8 text-primary-foreground/80">
-                        <span>Envío</span>
-                        <span>{deliveryCost === 0 ? "Gratis" : `${deliveryCost.toFixed(2)} €`}</span>
-                      </div>
-                      <Separator className="bg-primary-foreground/20" />
-                      <div className="flex justify-between md:gap-8 text-xl font-serif font-medium">
-                        <span>Total (IVA incluido)</span>
-                        <span>{total.toFixed(2)} €</span>
-                      </div>
+              <Card className="card-organic overflow-hidden">
+                <CardHeader className="bg-muted/50">
+                  <CardTitle className="text-lg font-serif">Desglose del Pedido</CardTitle>
+                </CardHeader>
+                <CardContent className="p-6 space-y-4">
+                  {/* Cost Breakdown */}
+                  <div className="space-y-3">
+                    <div className="flex justify-between text-foreground">
+                      <span>Subtotal (producto)</span>
+                      <span className="font-medium">{subtotal.toFixed(2)} €</span>
+                    </div>
+                    
+                    <div className="flex justify-between text-foreground">
+                      <span className="flex items-center gap-2">
+                        Gastos de envío
+                        {!isPickup && shippingInfo.zoneName && (
+                          <span className="text-xs text-muted-foreground">({shippingInfo.zoneName})</span>
+                        )}
+                      </span>
+                      <span className="font-medium">
+                        {isPickup ? (
+                          <span className="text-primary">Gratis</span>
+                        ) : shippingPostalCode.length >= 5 && shippingInfo.isValid ? (
+                          `${deliveryCost.toFixed(2)} €`
+                        ) : (
+                          <span className="text-muted-foreground text-sm">Introduce CP de envío</span>
+                        )}
+                      </span>
                     </div>
 
-                    <Button
-                      type="submit"
-                      className="bg-primary-foreground text-primary hover:bg-primary-foreground/90 text-lg py-6 px-8 font-medium md:min-w-[200px]"
-                    >
-                      Hacer Pedido
-                    </Button>
+                    <div className="flex justify-between text-muted-foreground text-sm">
+                      <span>IVA (incluido)</span>
+                      <span>Incluido</span>
+                    </div>
                   </div>
+
+                  <Separator />
+
+                  {/* Total */}
+                  <div className="flex justify-between items-center text-xl font-serif font-medium text-foreground">
+                    <span>Total</span>
+                    <span className="text-primary">
+                      {(isPickup || (shippingPostalCode.length >= 5 && shippingInfo.isValid)) 
+                        ? `${total.toFixed(2)} €`
+                        : `${subtotal.toFixed(2)} € + envío`
+                      }
+                    </span>
+                  </div>
+
+                  {/* Zone restriction warning */}
+                  {!isPickup && !shippingInfo.isValid && shippingPostalCode.length >= 5 && (
+                    <Alert variant="destructive" className="mt-4">
+                      <AlertCircle className="h-4 w-4" />
+                      <AlertDescription>
+                        No podemos realizar el envío a este código postal. Por favor, selecciona recogida en tienda o introduce un código postal de Tenerife.
+                      </AlertDescription>
+                    </Alert>
+                  )}
+
+                  {/* Submit Button */}
+                  <Button
+                    type="submit"
+                    disabled={!canPlaceOrder}
+                    className={cn(
+                      "w-full text-lg py-6 font-medium mt-4",
+                      "bg-primary text-primary-foreground hover:bg-primary/90",
+                      !canPlaceOrder && "opacity-50 cursor-not-allowed"
+                    )}
+                  >
+                    Hacer Pedido
+                  </Button>
+
+                  {!canPlaceOrder && !isPickup && (
+                    <p className="text-center text-sm text-muted-foreground">
+                      Introduce un código postal válido de Tenerife para continuar
+                    </p>
+                  )}
                 </CardContent>
               </Card>
             </motion.div>
