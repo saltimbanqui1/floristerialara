@@ -1,27 +1,47 @@
-import Header from "@/components/Header";
-import HeroSection from "@/components/HeroSection";
-import TrustBadges from "@/components/TrustBadges";
-import ServicesSection from "@/components/ServicesSection";
-import WhyChooseUs from "@/components/WhyChooseUs";
-import ProductsSection from "@/components/ProductsSection";
-import ReviewsSection from "@/components/ReviewsSection";
-import CTASection from "@/components/CTASection";
-import Footer from "@/components/Footer";
+import { useState } from "react";
+import LandingHeader from "@/components/landing/LandingHeader";
+import LandingHero from "@/components/landing/LandingHero";
+import ProductShowcase from "@/components/landing/ProductShowcase";
+import CheckoutSection from "@/components/checkout/CheckoutSection";
+import LandingFooter from "@/components/landing/LandingFooter";
+
+interface SelectedProduct {
+  id: string;
+  name: string;
+  price: number;
+  description: string;
+}
 
 const Index = () => {
+  const [selectedProduct, setSelectedProduct] = useState<SelectedProduct | null>(null);
+
+  const handleSelectProduct = (product: SelectedProduct) => {
+    setSelectedProduct(product);
+  };
+
+  const handleClearProduct = () => {
+    setSelectedProduct(null);
+    // Scroll back to products
+    const productsSection = document.getElementById("productos");
+    if (productsSection) {
+      productsSection.scrollIntoView({ behavior: "smooth" });
+    }
+  };
+
   return (
     <div className="min-h-screen bg-background">
-      <Header />
+      <LandingHeader />
       <main className="pt-16 md:pt-20">
-        <HeroSection />
-        <TrustBadges />
-        <ServicesSection />
-        <WhyChooseUs />
-        <ProductsSection />
-        <ReviewsSection />
-        <CTASection />
+        <LandingHero />
+        <ProductShowcase onSelectProduct={handleSelectProduct} />
+        {selectedProduct && (
+          <CheckoutSection 
+            selectedProduct={selectedProduct} 
+            onClearProduct={handleClearProduct}
+          />
+        )}
       </main>
-      <Footer />
+      <LandingFooter />
     </div>
   );
 };
