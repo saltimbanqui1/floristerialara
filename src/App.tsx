@@ -4,9 +4,11 @@ import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route } from "react-router-dom";
 import { CookieProvider } from "@/contexts/CookieContext";
+import { CartProvider } from "@/contexts/CartContext";
 import Index from "./pages/Index";
 import NotFound from "./pages/NotFound";
 import CookieBanner from "@/components/cookies/CookieBanner";
+import CartSheet from "@/components/cart/CartSheet";
 
 const queryClient = new QueryClient();
 
@@ -14,16 +16,19 @@ const App = () => (
   <QueryClientProvider client={queryClient}>
     <TooltipProvider>
       <CookieProvider>
-        <Toaster />
-        <Sonner />
-        <CookieBanner />
-        <BrowserRouter>
-          <Routes>
-            <Route path="/" element={<Index />} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
-            <Route path="*" element={<NotFound />} />
-          </Routes>
-        </BrowserRouter>
+        <CartProvider>
+          <Toaster />
+          <Sonner />
+          <CookieBanner />
+          <CartSheet />
+          <BrowserRouter>
+            <Routes>
+              <Route path="/" element={<Index />} />
+              {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+              <Route path="*" element={<NotFound />} />
+            </Routes>
+          </BrowserRouter>
+        </CartProvider>
       </CookieProvider>
     </TooltipProvider>
   </QueryClientProvider>

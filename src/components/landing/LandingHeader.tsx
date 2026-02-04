@@ -1,7 +1,10 @@
-import { motion } from "framer-motion";
-import { Phone, MapPin } from "lucide-react";
+import { Phone, MapPin, ShoppingCart } from "lucide-react";
+import { useCart } from "@/contexts/CartContext";
+import { Button } from "@/components/ui/button";
 
 const LandingHeader = () => {
+  const { totalItems, openCart } = useCart();
+
   const scrollToProducts = () => {
     const productsSection = document.getElementById("productos");
     if (productsSection) {
@@ -44,6 +47,22 @@ const LandingHeader = () => {
               <Phone className="w-4 h-4" />
               <span className="hidden sm:inline">922 25 13 18</span>
             </a>
+
+            {/* Cart Button */}
+            <Button
+              variant="outline"
+              size="icon"
+              className="relative"
+              onClick={openCart}
+              aria-label="Abrir carrito"
+            >
+              <ShoppingCart className="w-5 h-5" />
+              {totalItems > 0 && (
+                <span className="absolute -top-2 -right-2 bg-primary text-primary-foreground text-xs font-bold rounded-full w-5 h-5 flex items-center justify-center">
+                  {totalItems > 99 ? "99+" : totalItems}
+                </span>
+              )}
+            </Button>
           </nav>
         </div>
       </div>

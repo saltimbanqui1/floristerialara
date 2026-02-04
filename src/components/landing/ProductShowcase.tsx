@@ -2,8 +2,10 @@ import { motion } from "framer-motion";
 import { useEffect, useState } from "react";
 import { Card, CardContent } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
-import { ShoppingBag } from "lucide-react";
+import { ShoppingCart, Check } from "lucide-react";
 import { supabase } from "@/integrations/supabase/client";
+import { useCart } from "@/contexts/CartContext";
+import { toast } from "@/hooks/use-toast";
 
 // Product images
 import presenciaImg from "@/assets/products/presencia.jpg";
@@ -36,13 +38,11 @@ interface Product {
   image_url?: string;
 }
 
-interface ProductShowcaseProps {
-  onSelectProduct: (product: { id: string; name: string; price: number; description: string }) => void;
-}
-
-const ProductShowcase = ({ onSelectProduct }: ProductShowcaseProps) => {
+const ProductShowcase = () => {
   const [products, setProducts] = useState<Product[]>([]);
   const [loading, setLoading] = useState(true);
+  const [addedProducts, setAddedProducts] = useState<Set<string>>(new Set());
+  const { addItem } = useCart();
 
   useEffect(() => {
     const fetchProducts = async () => {
@@ -74,21 +74,30 @@ const ProductShowcase = ({ onSelectProduct }: ProductShowcaseProps) => {
     fetchProducts();
   }, []);
 
-  const handleBuyClick = (product: Product) => {
-    onSelectProduct({
+  const handleAddToCart = (product: Product) => {
+    addItem({
       id: product.id,
       name: product.name,
       price: product.price,
+      image: productImages[product.id] || product.image_url,
       description: product.description || product.size,
     });
+
+    setAddedProducts((prev) => new Set(prev).add(product.id));
     
-    // Smooth scroll to checkout
+    toast({
+      title: "Añadido al carrito",
+      description: `${product.name} se ha añadido a tu carrito`,
+    });
+
+    // Reset the "added" state after 2 seconds
     setTimeout(() => {
-      const checkoutSection = document.getElementById("checkout");
-      if (checkoutSection) {
-        checkoutSection.scrollIntoView({ behavior: "smooth", block: "start" });
-      }
-    }, 100);
+      setAddedProducts((prev) => {
+        const newSet = new Set(prev);
+        newSet.delete(product.id);
+        return newSet;
+      });
+    }, 2000);
   };
 
   return (
@@ -105,7 +114,7 @@ const ProductShowcase = ({ onSelectProduct }: ProductShowcaseProps) => {
             Nuestros Productos
           </h2>
           <p className="text-muted-foreground max-w-xl mx-auto text-sm">
-            Selecciona el arreglo que más te guste
+            Selecciona los arreglos que más te gusten y añádelos al carrito
           </p>
         </motion.div>
 
@@ -121,53 +130,69 @@ const ProductShowcase = ({ onSelectProduct }: ProductShowcaseProps) => {
           </div>
         ) : (
           <div className="grid grid-cols-2 md:grid-cols-4 gap-3 md:gap-4">
-            {products.map((product, index) => (
-              <motion.div
-                key={product.id}
-                initial={{ opacity: 0, y: 20 }}
-                whileInView={{ opacity: 1, y: 0 }}
-                viewport={{ once: true }}
-                transition={{ duration: 0.4, delay: index * 0.05 }}
-              >
-                <Card className="card-organic hover:shadow-medium transition-all duration-300 group overflow-hidden">
-                  <div className="aspect-square bg-muted relative overflow-hidden">
-                    <img 
-                      src={productImages[product.id] || product.image_url || "/placeholder.svg"} 
-                      alt={product.name}
-                      className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
-                    />
-                    {product.original_price && (
-                      <div className="absolute top-2 right-2 bg-secondary text-secondary-foreground text-xs font-medium px-2 py-1 rounded">
-                        Oferta
-                      </div>
-                    )}
-                  </div>
-                  <CardContent className="p-3">
-                    <h3 className="font-serif font-medium text-foreground text-sm mb-1">
-                      {product.name}
-                    </h3>
-                    <div className="flex items-center gap-2 mb-3">
-                      <span className="text-primary font-semibold text-sm">
-                        {Number(product.price).toFixed(2)} €
-                      </span>
+            {products.map((product, index) => {
+              const isAdded = addedProducts.has(product.id);
+              return (
+                <motion.div
+                  key={product.id}
+                  initial={{ opacity: 0, y: 20 }}
+                  whileInView={{ opacity: 1, y: 0 }}
+                  viewport={{ once: true }}
+                  transition={{ duration: 0.4, delay: index * 0.05 }}
+                >
+                  <Card className="card-organic hover:shadow-medium transition-all duration-300 group overflow-hidden">
+                    <div className="aspect-square bg-muted relative overflow-hidden">
+                      <img 
+                        src={productImages[product.id] || product.image_url || "/placeholder.svg"} 
+                        alt={product.name}
+                        className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-500"
+                      />
                       {product.original_price && (
-                        <span className="text-muted-foreground line-through text-xs">
-                          {Number(product.original_price).toFixed(2)} €
-                        </span>
+                        <div className="absolute top-2 right-2 bg-secondary text-secondary-foreground text-xs font-medium px-2 py-1 rounded">
+                          Oferta
+                        </div>
                       )}
                     </div>
-                    <Button
-                      onClick={() => handleBuyClick(product)}
-                      className="w-full text-sm py-2 gap-2 btn-botanical font-semibold shadow-md transition-all duration-300"
-                      size="sm"
-                    >
-                      <ShoppingBag className="w-4 h-4" />
-                      Comprar
-                    </Button>
-                  </CardContent>
-                </Card>
-              </motion.div>
-            ))}
+                    <CardContent className="p-3">
+                      <h3 className="font-serif font-medium text-foreground text-sm mb-1">
+                        {product.name}
+                      </h3>
+                      <div className="flex items-center gap-2 mb-3">
+                        <span className="text-primary font-semibold text-sm">
+                          {Number(product.price).toFixed(2)} €
+                        </span>
+                        {product.original_price && (
+                          <span className="text-muted-foreground line-through text-xs">
+                            {Number(product.original_price).toFixed(2)} €
+                          </span>
+                        )}
+                      </div>
+                      <Button
+                        onClick={() => handleAddToCart(product)}
+                        className={`w-full text-sm py-2 gap-2 font-semibold shadow-md transition-all duration-300 ${
+                          isAdded 
+                            ? "bg-green-600 hover:bg-green-700 text-white" 
+                            : "btn-botanical"
+                        }`}
+                        size="sm"
+                      >
+                        {isAdded ? (
+                          <>
+                            <Check className="w-4 h-4" />
+                            Añadido
+                          </>
+                        ) : (
+                          <>
+                            <ShoppingCart className="w-4 h-4" />
+                            Añadir al carrito
+                          </>
+                        )}
+                      </Button>
+                    </CardContent>
+                  </Card>
+                </motion.div>
+              );
+            })}
           </div>
         )}
       </div>

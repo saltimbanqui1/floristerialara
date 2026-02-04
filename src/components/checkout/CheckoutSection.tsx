@@ -1,8 +1,8 @@
-import { useState, useEffect, useMemo } from "react";
+import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { Calendar as CalendarIcon, Truck, Store, Copy, Check, AlertCircle, MapPin } from "lucide-react";
+import { Calendar as CalendarIcon, Truck, Store, Copy, Check, AlertCircle, MapPin, Minus, Plus, Trash2 } from "lucide-react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -20,6 +20,7 @@ import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "
 import { Alert, AlertDescription } from "@/components/ui/alert";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
+import { useCart } from "@/contexts/CartContext";
 
 // Import product images
 import presenciaImg from "@/assets/products/presencia.jpg";
@@ -42,52 +43,38 @@ const productImages: Record<string, string> = {
   esplendor: esplendorImg,
 };
 
-export interface SelectedProduct {
-  id: string;
-  name: string;
-  price: number;
-  description: string;
-}
-
 // Shipping zones configuration
 const SHIPPING_ZONES = {
-  // Zona 1 - Local (La Laguna centro, Santa Cruz centro)
   zone1: {
     postalCodes: ["38200", "38201", "38202", "38203", "38001", "38002", "38003"],
     cost: 3.00,
     name: "Local",
   },
-  // Zona 2 - Estándar (Área metropolitana)
   zone2: {
     postalCodes: ["38004", "38005", "38006", "38007", "38008", "38009", "38010", "38107", "38108", "38109", "38110", "38111", "38204", "38205", "38206", "38207", "38208", "38250", "38260", "38270", "38280", "38290", "38291", "38292", "38293", "38294", "38295", "38296", "38297", "38310", "38320", "38330", "38340", "38350", "38355", "38358", "38359"],
     cost: 7.00,
     name: "Estándar",
   },
-  // Zona 3 - Alejada (resto de la provincia)
   zone3: {
     cost: 12.00,
     name: "Alejada",
   },
 };
 
-// Function to calculate shipping cost based on postal code
 const getShippingInfo = (postalCode: string, isPickup: boolean): { 
   cost: number; 
   zoneName: string; 
   isValid: boolean; 
   errorMessage?: string;
 } => {
-  // Pickup is always free
   if (isPickup) {
     return { cost: 0, zoneName: "Recogida", isValid: true };
   }
 
-  // Validate postal code format
   if (!postalCode || postalCode.length < 5) {
-    return { cost: 0, zoneName: "", isValid: true }; // No error yet, still typing
+    return { cost: 0, zoneName: "", isValid: true };
   }
 
-  // Check if it's a Tenerife postal code (starts with 38)
   if (!postalCode.startsWith("38")) {
     return { 
       cost: 0, 
@@ -97,23 +84,18 @@ const getShippingInfo = (postalCode: string, isPickup: boolean): {
     };
   }
 
-  // Check Zone 1
   if (SHIPPING_ZONES.zone1.postalCodes.includes(postalCode)) {
     return { cost: SHIPPING_ZONES.zone1.cost, zoneName: SHIPPING_ZONES.zone1.name, isValid: true };
   }
 
-  // Check Zone 2
   if (SHIPPING_ZONES.zone2.postalCodes.includes(postalCode)) {
     return { cost: SHIPPING_ZONES.zone2.cost, zoneName: SHIPPING_ZONES.zone2.name, isValid: true };
   }
 
-  // Default to Zone 3 for any other 38xxx postal code
   return { cost: SHIPPING_ZONES.zone3.cost, zoneName: SHIPPING_ZONES.zone3.name, isValid: true };
 };
 
-// Validation schema
 const checkoutSchema = z.object({
-  // Billing info
   email: z.string().email("Email inválido").min(1, "El email es obligatorio"),
   firstName: z.string().min(1, "El nombre es obligatorio").max(50, "Máximo 50 caracteres"),
   lastName: z.string().min(1, "Los apellidos son obligatorios").max(50, "Máximo 50 caracteres"),
@@ -122,14 +104,12 @@ const checkoutSchema = z.object({
   billingCity: z.string().min(1, "La ciudad es obligatoria"),
   billingPostalCode: z.string().min(4, "El código postal es obligatorio"),
   
-  // Shipping info - always required unless pickup
   shippingName: z.string().optional(),
   shippingPhone: z.string().optional(),
   shippingAddress: z.string().optional(),
   shippingCity: z.string().optional(),
   shippingPostalCode: z.string().optional(),
   
-  // Delivery options
   deliveryDate: z.date({ required_error: "Selecciona una fecha de entrega" }),
   cardMessage: z.string().max(200, "Máximo 200 caracteres").optional(),
   deliveryType: z.enum(["delivery", "pickup"], {
@@ -140,13 +120,9 @@ const checkoutSchema = z.object({
 
 type CheckoutFormData = z.infer<typeof checkoutSchema>;
 
-interface CheckoutSectionProps {
-  selectedProduct: SelectedProduct | null;
-  onClearProduct: () => void;
-}
-
-const CheckoutSection = ({ selectedProduct, onClearProduct }: CheckoutSectionProps) => {
+const CheckoutSection = () => {
   const { toast } = useToast();
+  const { items, totalPrice, updateQuantity, removeItem, clearCart } = useCart();
   const [copiedBilling, setCopiedBilling] = useState(false);
 
   const form = useForm<CheckoutFormData>({
@@ -174,20 +150,16 @@ const CheckoutSection = ({ selectedProduct, onClearProduct }: CheckoutSectionPro
   const shippingPostalCode = form.watch("shippingPostalCode") || "";
   const isPickup = deliveryType === "pickup";
 
-  // Calculate shipping based on postal code
   const shippingInfo = useMemo(() => {
     return getShippingInfo(shippingPostalCode, isPickup);
   }, [shippingPostalCode, isPickup]);
 
-  // Calculate totals
-  const subtotal = selectedProduct?.price || 0;
+  const subtotal = totalPrice;
   const deliveryCost = shippingInfo.cost;
   const total = subtotal + deliveryCost;
 
-  // Check if order can be placed
   const canPlaceOrder = isPickup || (shippingInfo.isValid && shippingPostalCode.length >= 5);
 
-  // Copy billing to shipping
   const copyBillingToShipping = () => {
     const { firstName, lastName, phone, billingAddress, billingCity, billingPostalCode } = form.getValues();
     form.setValue("shippingName", `${firstName} ${lastName}`.trim());
@@ -200,7 +172,6 @@ const CheckoutSection = ({ selectedProduct, onClearProduct }: CheckoutSectionPro
   };
 
   const onSubmit = (data: CheckoutFormData) => {
-    // Validate shipping address if delivery (not pickup)
     if (!isPickup) {
       if (!data.shippingName || !data.shippingPhone || !data.shippingAddress) {
         toast({
@@ -226,14 +197,13 @@ const CheckoutSection = ({ selectedProduct, onClearProduct }: CheckoutSectionPro
       description: "Te contactaremos pronto para confirmar tu pedido.",
     });
     
-    console.log("Order data:", { product: selectedProduct, formData: data, shippingInfo, total });
+    console.log("Order data:", { items, formData: data, shippingInfo, total });
+    clearCart();
   };
 
-  if (!selectedProduct) {
+  if (items.length === 0) {
     return null;
   }
-
-  const productImage = productImages[selectedProduct.id] || "/placeholder.svg";
 
   return (
     <section id="checkout" className="section-padding bg-background">
@@ -262,32 +232,59 @@ const CheckoutSection = ({ selectedProduct, onClearProduct }: CheckoutSectionPro
             >
               <Card className="card-organic overflow-hidden">
                 <CardHeader className="bg-muted/50">
-                  <CardTitle className="text-lg font-serif">Resumen del Pedido</CardTitle>
+                  <CardTitle className="text-lg font-serif">Tu Carrito ({items.length} {items.length === 1 ? 'producto' : 'productos'})</CardTitle>
                 </CardHeader>
-                <CardContent className="p-4">
-                  <div className="flex gap-4 items-start">
-                    <div className="w-24 h-24 rounded-lg overflow-hidden bg-muted flex-shrink-0">
-                      <img
-                        src={productImage}
-                        alt={selectedProduct.name}
-                        className="w-full h-full object-cover"
-                      />
+                <CardContent className="p-4 space-y-4">
+                  {items.map((item) => (
+                    <div key={item.id} className="flex gap-4 items-start py-3 border-b border-border last:border-0">
+                      <div className="w-20 h-20 rounded-lg overflow-hidden bg-muted flex-shrink-0">
+                        <img
+                          src={productImages[item.id] || item.image || "/placeholder.svg"}
+                          alt={item.name}
+                          className="w-full h-full object-cover"
+                        />
+                      </div>
+                      <div className="flex-1 min-w-0">
+                        <h3 className="font-serif font-medium text-foreground">{item.name}</h3>
+                        <p className="text-primary font-semibold mt-1">{item.price.toFixed(2)} €</p>
+                        <div className="flex items-center gap-2 mt-2">
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            className="h-7 w-7"
+                            onClick={() => updateQuantity(item.id, item.quantity - 1)}
+                          >
+                            <Minus className="w-3 h-3" />
+                          </Button>
+                          <span className="w-6 text-center text-sm font-medium">{item.quantity}</span>
+                          <Button
+                            type="button"
+                            variant="outline"
+                            size="icon"
+                            className="h-7 w-7"
+                            onClick={() => updateQuantity(item.id, item.quantity + 1)}
+                          >
+                            <Plus className="w-3 h-3" />
+                          </Button>
+                          <Button
+                            type="button"
+                            variant="ghost"
+                            size="icon"
+                            className="h-7 w-7 text-destructive hover:text-destructive ml-auto"
+                            onClick={() => removeItem(item.id)}
+                          >
+                            <Trash2 className="w-4 h-4" />
+                          </Button>
+                        </div>
+                      </div>
+                      <div className="text-right">
+                        <span className="font-semibold text-foreground">
+                          {(item.price * item.quantity).toFixed(2)} €
+                        </span>
+                      </div>
                     </div>
-                    <div className="flex-1 min-w-0">
-                      <h3 className="font-serif font-medium text-foreground text-lg">{selectedProduct.name}</h3>
-                      <p className="text-sm text-muted-foreground mt-1">{selectedProduct.description}</p>
-                      <p className="text-primary font-semibold mt-2">{subtotal.toFixed(2)} €</p>
-                    </div>
-                    <Button
-                      type="button"
-                      variant="ghost"
-                      size="sm"
-                      onClick={onClearProduct}
-                      className="text-destructive hover:text-destructive"
-                    >
-                      Cambiar
-                    </Button>
-                  </div>
+                  ))}
                 </CardContent>
               </Card>
             </motion.div>
@@ -408,7 +405,7 @@ const CheckoutSection = ({ selectedProduct, onClearProduct }: CheckoutSectionPro
                 </Card>
               </motion.div>
 
-              {/* Right Column - Shipping (Visible by Default) */}
+              {/* Right Column - Shipping */}
               <motion.div
                 initial={{ opacity: 0, y: 20 }}
                 animate={{ opacity: 1, y: 0 }}
@@ -595,7 +592,7 @@ const CheckoutSection = ({ selectedProduct, onClearProduct }: CheckoutSectionPro
                           <RadioGroup
                             onValueChange={(value) => {
                               field.onChange(value);
-                              form.setValue("timeSlot", ""); // Reset time slot
+                              form.setValue("timeSlot", "");
                             }}
                             defaultValue={field.value}
                             className="grid md:grid-cols-2 gap-3"
@@ -787,7 +784,7 @@ const CheckoutSection = ({ selectedProduct, onClearProduct }: CheckoutSectionPro
               </Card>
             </motion.div>
 
-            {/* Order Total with Cost Breakdown */}
+            {/* Order Total */}
             <motion.div
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
@@ -798,10 +795,9 @@ const CheckoutSection = ({ selectedProduct, onClearProduct }: CheckoutSectionPro
                   <CardTitle className="text-lg font-serif">Desglose del Pedido</CardTitle>
                 </CardHeader>
                 <CardContent className="p-6 space-y-4">
-                  {/* Cost Breakdown */}
                   <div className="space-y-3">
                     <div className="flex justify-between text-foreground">
-                      <span>Subtotal (producto)</span>
+                      <span>Subtotal ({items.reduce((sum, item) => sum + item.quantity, 0)} productos)</span>
                       <span className="font-medium">{subtotal.toFixed(2)} €</span>
                     </div>
                     
@@ -831,7 +827,6 @@ const CheckoutSection = ({ selectedProduct, onClearProduct }: CheckoutSectionPro
 
                   <Separator />
 
-                  {/* Total */}
                   <div className="flex justify-between items-center text-xl font-serif font-medium text-foreground">
                     <span>Total</span>
                     <span className="text-primary">
@@ -842,7 +837,6 @@ const CheckoutSection = ({ selectedProduct, onClearProduct }: CheckoutSectionPro
                     </span>
                   </div>
 
-                  {/* Zone restriction warning */}
                   {!isPickup && !shippingInfo.isValid && shippingPostalCode.length >= 5 && (
                     <Alert variant="destructive" className="mt-4">
                       <AlertCircle className="h-4 w-4" />
@@ -852,7 +846,6 @@ const CheckoutSection = ({ selectedProduct, onClearProduct }: CheckoutSectionPro
                     </Alert>
                   )}
 
-                  {/* Submit Button */}
                   <Button
                     type="submit"
                     disabled={!canPlaceOrder}
