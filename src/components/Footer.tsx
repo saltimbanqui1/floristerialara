@@ -95,33 +95,26 @@ const Footer = () => {
               {/* Social Media */}
               <div className="flex flex-col items-center md:items-end gap-3">
                 <p className="text-charcoal-light text-sm">Síguenos en redes</p>
-                <div className="flex items-center gap-4">
+                <div className="flex items-center gap-3">
                   <a
                     href="https://www.instagram.com/floristerialara"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-charcoal-light hover:text-primary-foreground transition-colors p-2 rounded-full hover:bg-white/10"
+                    className="flex items-center gap-2 bg-gradient-to-r from-[#833AB4] via-[#FD1D1D] to-[#F77737] text-white px-4 py-2 rounded-full hover:opacity-90 transition-opacity"
                     aria-label="Instagram"
                   >
-                    <InstagramIcon className="w-6 h-6" />
+                    <InstagramIcon className="w-5 h-5" />
+                    <span className="text-sm font-medium">Instagram</span>
                   </a>
                   <a
-                    href="https://www.facebook.com/people/Flores-Lara/100063768323294/#"
+                    href="https://www.facebook.com/people/Flores-Lara/100063768323294/"
                     target="_blank"
                     rel="noopener noreferrer"
-                    className="text-charcoal-light hover:text-primary-foreground transition-colors p-2 rounded-full hover:bg-white/10"
+                    className="flex items-center gap-2 bg-[#1877F2] text-white px-4 py-2 rounded-full hover:bg-[#166FE5] transition-colors"
                     aria-label="Facebook"
                   >
-                    <FacebookIcon className="w-6 h-6" />
-                  </a>
-                  <a
-                    href={whatsappUrl}
-                    target="_blank"
-                    rel="noopener noreferrer"
-                    className="text-charcoal-light hover:text-[#25D366] transition-colors p-2 rounded-full hover:bg-white/10"
-                    aria-label="WhatsApp"
-                  >
-                    <WhatsAppIcon className="w-6 h-6" />
+                    <FacebookIcon className="w-5 h-5" />
+                    <span className="text-sm font-medium">Facebook</span>
                   </a>
                 </div>
               </div>
