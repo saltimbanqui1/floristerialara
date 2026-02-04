@@ -522,7 +522,7 @@ const CheckoutSection = ({ selectedProduct, onClearProduct }: CheckoutSectionPro
                                   <Store className="h-4 w-4 text-primary" />
                                   <span className="font-medium">Recogida en tienda</span>
                                 </div>
-                                <p className="text-xs text-muted-foreground mt-1">C/ San Agustín, 42 - La Laguna</p>
+                                <p className="text-xs text-muted-foreground mt-1">C/ San Antonio, 30 - La Laguna</p>
                               </Label>
                               <span className="font-medium text-primary">Gratis</span>
                             </div>
