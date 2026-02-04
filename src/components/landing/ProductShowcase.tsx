@@ -162,7 +162,7 @@ const ProductShowcase = ({ onSelectProduct }: ProductShowcaseProps) => {
                       size="sm"
                     >
                       <ShoppingBag className="w-4 h-4" />
-                      Lo quiero comprar
+                      Comprar
                     </Button>
                   </CardContent>
                 </Card>
