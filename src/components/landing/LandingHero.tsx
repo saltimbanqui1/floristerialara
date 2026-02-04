@@ -56,7 +56,7 @@ const LandingHero = () => {
             <div className="pt-4">
               <Button
                 onClick={scrollToProducts}
-                className="bg-foreground text-background hover:bg-foreground/90 text-lg py-6 px-8 font-medium gap-2"
+                className="btn-botanical text-lg py-6 px-8 font-medium gap-2"
               >
                 Ver productos
                 <ArrowDown className="w-5 h-5" />

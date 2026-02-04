@@ -158,7 +158,7 @@ const ProductShowcase = ({ onSelectProduct }: ProductShowcaseProps) => {
                     </div>
                     <Button
                       onClick={() => handleBuyClick(product)}
-                      className="w-full text-sm py-2 gap-2 bg-foreground hover:bg-foreground/90 text-background font-semibold shadow-md transition-all duration-300"
+                      className="w-full text-sm py-2 gap-2 btn-botanical font-semibold shadow-md transition-all duration-300"
                       size="sm"
                     >
                       <ShoppingBag className="w-4 h-4" />

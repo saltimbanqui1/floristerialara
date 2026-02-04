@@ -686,19 +686,19 @@ const CheckoutSection = ({ selectedProduct, onClearProduct }: CheckoutSectionPro
               animate={{ opacity: 1, y: 0 }}
               transition={{ duration: 0.4, delay: 0.4 }}
             >
-              <Card className="card-organic bg-foreground text-background">
+              <Card className="card-organic bg-primary text-primary-foreground">
                 <CardContent className="p-6">
                   <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
                     <div className="space-y-2">
-                      <div className="flex justify-between md:gap-8 text-background/80">
+                      <div className="flex justify-between md:gap-8 text-primary-foreground/80">
                         <span>Subtotal</span>
                         <span>{subtotal.toFixed(2)} €</span>
                       </div>
-                      <div className="flex justify-between md:gap-8 text-background/80">
+                      <div className="flex justify-between md:gap-8 text-primary-foreground/80">
                         <span>Envío</span>
                         <span>{deliveryCost === 0 ? "Gratis" : `${deliveryCost.toFixed(2)} €`}</span>
                       </div>
-                      <Separator className="bg-background/20" />
+                      <Separator className="bg-primary-foreground/20" />
                       <div className="flex justify-between md:gap-8 text-xl font-serif font-medium">
                         <span>Total (IVA incluido)</span>
                         <span>{total.toFixed(2)} €</span>
@@ -707,7 +707,7 @@ const CheckoutSection = ({ selectedProduct, onClearProduct }: CheckoutSectionPro
 
                     <Button
                       type="submit"
-                      className="bg-background text-foreground hover:bg-muted text-lg py-6 px-8 font-medium md:min-w-[200px]"
+                      className="bg-primary-foreground text-primary hover:bg-primary-foreground/90 text-lg py-6 px-8 font-medium md:min-w-[200px]"
                     >
                       Hacer Pedido
                     </Button>
