@@ -97,7 +97,7 @@ const Footer = () => {
                 <p className="text-charcoal-light text-sm">Síguenos en redes</p>
                 <div className="flex items-center gap-4">
                   <a
-                    href="https://www.instagram.com/floristerialara#"
+                    href="https://www.instagram.com/floristerialara"
                     target="_blank"
                     rel="noopener noreferrer"
                     className="text-charcoal-light hover:text-primary-foreground transition-colors p-2 rounded-full hover:bg-white/10"
