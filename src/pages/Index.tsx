@@ -1,7 +1,10 @@
 import { useState } from "react";
 import LandingHeader from "@/components/landing/LandingHeader";
 import LandingHero from "@/components/landing/LandingHero";
+import ServicesSection from "@/components/ServicesSection";
+import WhyChooseUs from "@/components/WhyChooseUs";
 import ProductShowcase from "@/components/landing/ProductShowcase";
+import ReviewsSection from "@/components/ReviewsSection";
 import CheckoutSection from "@/components/checkout/CheckoutSection";
 import LandingFooter from "@/components/landing/LandingFooter";
 
@@ -33,7 +36,10 @@ const Index = () => {
       <LandingHeader />
       <main className="pt-16 md:pt-20">
         <LandingHero />
+        <ServicesSection />
+        <WhyChooseUs />
         <ProductShowcase onSelectProduct={handleSelectProduct} />
+        <ReviewsSection />
         {selectedProduct && (
           <CheckoutSection 
             selectedProduct={selectedProduct} 
