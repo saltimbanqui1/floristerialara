@@ -3,7 +3,7 @@ import LandingHero from "@/components/landing/LandingHero";
 import ServicesSection from "@/components/ServicesSection";
 import WhyChooseUs from "@/components/WhyChooseUs";
 import ProductShowcase from "@/components/landing/ProductShowcase";
-import ReviewsSection from "@/components/ReviewsSection";
+
 import CheckoutSection from "@/components/checkout/CheckoutSection";
 import LandingFooter from "@/components/landing/LandingFooter";
 import { useCart } from "@/contexts/CartContext";
@@ -20,7 +20,7 @@ const Index = () => {
         <ServicesSection />
         <WhyChooseUs />
         <ProductShowcase />
-        <ReviewsSection />
+        
         {hasItemsInCart && <CheckoutSection />}
       </main>
       <LandingFooter />
