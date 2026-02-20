@@ -2,10 +2,11 @@ import { useState, useMemo } from "react";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { Calendar as CalendarIcon, Truck, Store, Copy, Check, AlertCircle, MapPin, Minus, Plus, Trash2 } from "lucide-react";
+import { Calendar as CalendarIcon, Truck, Store, Copy, Check, AlertCircle, MapPin, Minus, Plus, Trash2, Loader2 } from "lucide-react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
+import { supabase } from "@/integrations/supabase/client";
 
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -122,9 +123,9 @@ type CheckoutFormData = z.infer<typeof checkoutSchema>;
 
 const CheckoutSection = () => {
   const { toast } = useToast();
-  const { items, totalPrice, updateQuantity, removeItem, clearCart } = useCart();
+  const { items, totalPrice, updateQuantity, removeItem } = useCart();
   const [copiedBilling, setCopiedBilling] = useState(false);
-
+  const [isProcessing, setIsProcessing] = useState(false);
   const form = useForm<CheckoutFormData>({
     resolver: zodResolver(checkoutSchema),
     defaultValues: {
@@ -171,7 +172,7 @@ const CheckoutSection = () => {
     setTimeout(() => setCopiedBilling(false), 2000);
   };
 
-  const onSubmit = (data: CheckoutFormData) => {
+  const onSubmit = async (data: CheckoutFormData) => {
     if (!isPickup) {
       if (!data.shippingName || !data.shippingPhone || !data.shippingAddress) {
         toast({
@@ -192,13 +193,45 @@ const CheckoutSection = () => {
       }
     }
 
-    toast({
-      title: "¡Pedido enviado!",
-      description: "Te contactaremos pronto para confirmar tu pedido.",
-    });
-    
-    console.log("Order data:", { items, formData: data, shippingInfo, total });
-    clearCart();
+    setIsProcessing(true);
+
+    try {
+      const { data: responseData, error } = await supabase.functions.invoke("create-checkout", {
+        body: {
+          items: items.map((item) => ({
+            id: item.id,
+            name: item.name,
+            price: item.price,
+            quantity: item.quantity,
+            image: item.image || "",
+          })),
+          formData: {
+            ...data,
+            deliveryDate: data.deliveryDate ? format(data.deliveryDate, "yyyy-MM-dd") : "",
+          },
+          shippingCost: deliveryCost,
+          subtotal,
+          total,
+        },
+      });
+
+      if (error) throw error;
+
+      if (responseData?.url) {
+        window.location.href = responseData.url;
+      } else {
+        throw new Error("No checkout URL received");
+      }
+    } catch (err: any) {
+      console.error("Checkout error:", err);
+      toast({
+        title: "Error al procesar el pago",
+        description: "Hubo un problema al conectar con la pasarela de pago. Inténtalo de nuevo.",
+        variant: "destructive",
+      });
+    } finally {
+      setIsProcessing(false);
+    }
   };
 
   if (items.length === 0) {
@@ -848,14 +881,21 @@ const CheckoutSection = () => {
 
                   <Button
                     type="submit"
-                    disabled={!canPlaceOrder}
+                    disabled={!canPlaceOrder || isProcessing}
                     className={cn(
                       "w-full text-lg py-6 font-medium mt-4",
                       "bg-primary text-primary-foreground hover:bg-primary/90",
-                      !canPlaceOrder && "opacity-50 cursor-not-allowed"
+                      (!canPlaceOrder || isProcessing) && "opacity-50 cursor-not-allowed"
                     )}
                   >
-                    Hacer Pedido
+                    {isProcessing ? (
+                      <>
+                        <Loader2 className="w-5 h-5 animate-spin mr-2" />
+                        Procesando pago...
+                      </>
+                    ) : (
+                      "Pagar con Stripe"
+                    )}
                   </Button>
 
                   {!canPlaceOrder && !isPickup && (
