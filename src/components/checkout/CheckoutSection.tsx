@@ -217,9 +217,23 @@ const CheckoutSection = () => {
 
       if (error) throw error;
 
-      if (responseData?.url) {
-        window.location.href = responseData.url;
+      // Handle both parsed object and string responses
+      let checkoutUrl: string | undefined;
+      if (typeof responseData === "string") {
+        try {
+          const parsed = JSON.parse(responseData);
+          checkoutUrl = parsed.url;
+        } catch {
+          checkoutUrl = undefined;
+        }
       } else {
+        checkoutUrl = responseData?.url;
+      }
+
+      if (checkoutUrl) {
+        window.location.href = checkoutUrl;
+      } else {
+        console.error("Response data:", responseData);
         throw new Error("No checkout URL received");
       }
     } catch (err: any) {
