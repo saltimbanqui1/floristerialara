@@ -14,6 +14,156 @@ export type Database = {
   }
   public: {
     Tables: {
+      order_items: {
+        Row: {
+          created_at: string
+          id: string
+          order_id: string
+          product_id: string | null
+          product_image: string | null
+          product_name: string
+          quantity: number
+          total_price: number
+          unit_price: number
+        }
+        Insert: {
+          created_at?: string
+          id?: string
+          order_id: string
+          product_id?: string | null
+          product_image?: string | null
+          product_name: string
+          quantity?: number
+          total_price: number
+          unit_price: number
+        }
+        Update: {
+          created_at?: string
+          id?: string
+          order_id?: string
+          product_id?: string | null
+          product_image?: string | null
+          product_name?: string
+          quantity?: number
+          total_price?: number
+          unit_price?: number
+        }
+        Relationships: [
+          {
+            foreignKeyName: "order_items_order_id_fkey"
+            columns: ["order_id"]
+            isOneToOne: false
+            referencedRelation: "orders"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "order_items_product_id_fkey"
+            columns: ["product_id"]
+            isOneToOne: false
+            referencedRelation: "products"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      orders: {
+        Row: {
+          billing_address: string | null
+          billing_city: string | null
+          billing_postal_code: string | null
+          billing_province: string | null
+          card_message: string | null
+          created_at: string
+          delivery_date: string | null
+          delivery_time_slot: string | null
+          delivery_type: string
+          email: string
+          first_name: string
+          id: string
+          last_name: string
+          notes: string | null
+          phone: string
+          shipping_address: string | null
+          shipping_city: string | null
+          shipping_cost: number
+          shipping_first_name: string | null
+          shipping_last_name: string | null
+          shipping_phone: string | null
+          shipping_postal_code: string | null
+          shipping_province: string | null
+          status: string
+          stripe_payment_intent_id: string | null
+          stripe_session_id: string | null
+          subtotal: number
+          total: number
+          updated_at: string
+          user_id: string | null
+        }
+        Insert: {
+          billing_address?: string | null
+          billing_city?: string | null
+          billing_postal_code?: string | null
+          billing_province?: string | null
+          card_message?: string | null
+          created_at?: string
+          delivery_date?: string | null
+          delivery_time_slot?: string | null
+          delivery_type?: string
+          email: string
+          first_name: string
+          id?: string
+          last_name: string
+          notes?: string | null
+          phone: string
+          shipping_address?: string | null
+          shipping_city?: string | null
+          shipping_cost?: number
+          shipping_first_name?: string | null
+          shipping_last_name?: string | null
+          shipping_phone?: string | null
+          shipping_postal_code?: string | null
+          shipping_province?: string | null
+          status?: string
+          stripe_payment_intent_id?: string | null
+          stripe_session_id?: string | null
+          subtotal?: number
+          total?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Update: {
+          billing_address?: string | null
+          billing_city?: string | null
+          billing_postal_code?: string | null
+          billing_province?: string | null
+          card_message?: string | null
+          created_at?: string
+          delivery_date?: string | null
+          delivery_time_slot?: string | null
+          delivery_type?: string
+          email?: string
+          first_name?: string
+          id?: string
+          last_name?: string
+          notes?: string | null
+          phone?: string
+          shipping_address?: string | null
+          shipping_city?: string | null
+          shipping_cost?: number
+          shipping_first_name?: string | null
+          shipping_last_name?: string | null
+          shipping_phone?: string | null
+          shipping_postal_code?: string | null
+          shipping_province?: string | null
+          status?: string
+          stripe_payment_intent_id?: string | null
+          stripe_session_id?: string | null
+          subtotal?: number
+          total?: number
+          updated_at?: string
+          user_id?: string | null
+        }
+        Relationships: []
+      }
       products: {
         Row: {
           created_at: string
