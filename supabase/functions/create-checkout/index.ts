@@ -18,7 +18,7 @@ const PRICE_MAP: Record<string, string> = {
   ebano: "price_1T2sWcDjVxta6u89DBZfEAlD",
   picea: "price_1T2sWoDjVxta6u899B2Eq9fI",
   esplendor: "price_1T2sX3DjVxta6u89Yfs5Lh3L",
-  prueba: "price_1T2skEDjVxta6u8976VaU0eb",
+  
 };
 
 serve(async (req) => {

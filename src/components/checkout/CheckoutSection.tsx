@@ -1,8 +1,8 @@
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import { motion } from "framer-motion";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
-import { Calendar as CalendarIcon, Truck, Store, Copy, Check, AlertCircle, MapPin, Minus, Plus, Trash2, Loader2 } from "lucide-react";
+import { Calendar as CalendarIcon, Truck, Store, Copy, Check, AlertCircle, MapPin, Minus, Plus, Trash2, Loader2, MessageCircle } from "lucide-react";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -44,25 +44,15 @@ const productImages: Record<string, string> = {
   esplendor: esplendorImg,
 };
 
-// Shipping zones configuration
-const SHIPPING_ZONES = {
-  zone1: {
-    postalCodes: ["38200", "38201", "38202", "38203", "38001", "38002", "38003"],
-    cost: 3.00,
-    name: "Local",
-  },
-  zone2: {
-    postalCodes: ["38004", "38005", "38006", "38007", "38008", "38009", "38010", "38107", "38108", "38109", "38110", "38111", "38204", "38205", "38206", "38207", "38208", "38250", "38260", "38270", "38280", "38290", "38291", "38292", "38293", "38294", "38295", "38296", "38297", "38310", "38320", "38330", "38340", "38350", "38355", "38358", "38359"],
-    cost: 7.00,
-    name: "Estándar",
-  },
-  zone3: {
-    cost: 12.00,
-    name: "Alejada",
-  },
-};
+// Delivery zone type from database
+interface DeliveryZone {
+  postal_code: string;
+  municipality: string;
+  zone_name: string;
+  delivery_cost: number;
+}
 
-const getShippingInfo = (postalCode: string, isPickup: boolean): { 
+const getShippingInfo = (postalCode: string, isPickup: boolean, deliveryZones: DeliveryZone[]): { 
   cost: number; 
   zoneName: string; 
   isValid: boolean; 
@@ -76,24 +66,17 @@ const getShippingInfo = (postalCode: string, isPickup: boolean): {
     return { cost: 0, zoneName: "", isValid: true };
   }
 
-  if (!postalCode.startsWith("38")) {
-    return { 
-      cost: 0, 
-      zoneName: "", 
-      isValid: false, 
-      errorMessage: "Lo sentimos, no realizamos entregas a domicilio fuera de esta provincia, pero puedes elegir recogida en tienda." 
-    };
+  const zone = deliveryZones.find(z => z.postal_code === postalCode);
+  if (zone) {
+    return { cost: zone.delivery_cost, zoneName: zone.zone_name, isValid: true };
   }
 
-  if (SHIPPING_ZONES.zone1.postalCodes.includes(postalCode)) {
-    return { cost: SHIPPING_ZONES.zone1.cost, zoneName: SHIPPING_ZONES.zone1.name, isValid: true };
-  }
-
-  if (SHIPPING_ZONES.zone2.postalCodes.includes(postalCode)) {
-    return { cost: SHIPPING_ZONES.zone2.cost, zoneName: SHIPPING_ZONES.zone2.name, isValid: true };
-  }
-
-  return { cost: SHIPPING_ZONES.zone3.cost, zoneName: SHIPPING_ZONES.zone3.name, isValid: true };
+  return { 
+    cost: 0, 
+    zoneName: "", 
+    isValid: false, 
+    errorMessage: "Fuera de rango, consultar por WhatsApp" 
+  };
 };
 
 const checkoutSchema = z.object({
@@ -126,6 +109,19 @@ const CheckoutSection = () => {
   const { items, totalPrice, updateQuantity, removeItem } = useCart();
   const [copiedBilling, setCopiedBilling] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [deliveryZones, setDeliveryZones] = useState<DeliveryZone[]>([]);
+
+  useEffect(() => {
+    const fetchZones = async () => {
+      const { data } = await supabase
+        .from("delivery_zones")
+        .select("postal_code, municipality, zone_name, delivery_cost")
+        .eq("is_active", true);
+      if (data) setDeliveryZones(data);
+    };
+    fetchZones();
+  }, []);
+
   const form = useForm<CheckoutFormData>({
     resolver: zodResolver(checkoutSchema),
     defaultValues: {
@@ -152,8 +148,8 @@ const CheckoutSection = () => {
   const isPickup = deliveryType === "pickup";
 
   const shippingInfo = useMemo(() => {
-    return getShippingInfo(shippingPostalCode, isPickup);
-  }, [shippingPostalCode, isPickup]);
+    return getShippingInfo(shippingPostalCode, isPickup, deliveryZones);
+  }, [shippingPostalCode, isPickup, deliveryZones]);
 
   const subtotal = totalPrice;
   const deliveryCost = shippingInfo.cost;
@@ -606,7 +602,16 @@ const CheckoutSection = () => {
                           <Alert variant="destructive" className="border-destructive/50 bg-destructive/10">
                             <AlertCircle className="h-4 w-4" />
                             <AlertDescription className="text-sm">
-                              {shippingInfo.errorMessage}
+                              <span className="font-semibold">{shippingInfo.errorMessage}</span>
+                              <a
+                                href={`https://wa.me/34922251318?text=${encodeURIComponent("Hola, me gustaría consultar sobre envío a mi código postal: " + shippingPostalCode)}`}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="inline-flex items-center gap-1.5 ml-2 font-semibold underline underline-offset-2 hover:opacity-80"
+                              >
+                                <MessageCircle className="h-3.5 w-3.5" />
+                                Contactar por WhatsApp
+                              </a>
                             </AlertDescription>
                           </Alert>
                         )}
@@ -887,8 +892,17 @@ const CheckoutSection = () => {
                   {!isPickup && !shippingInfo.isValid && shippingPostalCode.length >= 5 && (
                     <Alert variant="destructive" className="mt-4">
                       <AlertCircle className="h-4 w-4" />
-                      <AlertDescription>
-                        No podemos realizar el envío a este código postal. Por favor, selecciona recogida en tienda o introduce un código postal de Tenerife.
+                      <AlertDescription className="flex flex-wrap items-center gap-1">
+                        <span className="font-semibold">Fuera de rango, consultar por WhatsApp</span>
+                        <a
+                          href={`https://wa.me/34922251318?text=${encodeURIComponent("Hola, me gustaría consultar sobre envío a mi código postal: " + shippingPostalCode)}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="inline-flex items-center gap-1.5 font-semibold underline underline-offset-2 hover:opacity-80"
+                        >
+                          <MessageCircle className="h-3.5 w-3.5" />
+                          Contactar
+                        </a>
                       </AlertDescription>
                     </Alert>
                   )}
@@ -913,8 +927,8 @@ const CheckoutSection = () => {
                   </Button>
 
                   {!canPlaceOrder && !isPickup && (
-                    <p className="text-center text-sm text-muted-foreground">
-                      Introduce un código postal válido de Tenerife para continuar
+                    <p className="text-center text-sm text-destructive font-medium">
+                      Código postal fuera de zona de reparto
                     </p>
                   )}
                 </CardContent>
