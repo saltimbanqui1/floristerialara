@@ -19,6 +19,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Alert, AlertDescription } from "@/components/ui/alert";
+import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useCart } from "@/contexts/CartContext";
@@ -616,6 +617,53 @@ const CheckoutSection = () => {
                           </Alert>
                         )}
                       </motion.div>
+                    )}
+
+                    {/* Shipping Info - Delivery Zones */}
+                    {!isPickup && (
+                      <div className="mt-4 p-4 bg-muted/50 rounded-lg border border-border/50">
+                        <div className="flex items-center gap-2 mb-2">
+                          <Truck className="h-4 w-4 text-primary" />
+                          <span className="text-sm font-medium text-foreground">Zonas de reparto</span>
+                        </div>
+                        <p className="text-xs text-muted-foreground mb-3">
+                          Repartimos exclusivamente en los siguientes municipios de Tenerife. Si tu zona no aparece,{" "}
+                          <a
+                            href={`https://wa.me/34922251318?text=${encodeURIComponent("Hola, me gustaría consultar sobre envío a mi zona.")}`}
+                            target="_blank"
+                            rel="noopener noreferrer"
+                            className="text-primary underline underline-offset-2 hover:opacity-80"
+                          >
+                            contáctanos por WhatsApp
+                          </a>.
+                        </p>
+                        <Accordion type="single" collapsible className="w-full">
+                          <AccordionItem value="santa-cruz" className="border-border/30">
+                            <AccordionTrigger className="text-xs py-2 hover:no-underline text-muted-foreground hover:text-foreground">
+                              Ver códigos postales disponibles en Santa Cruz
+                            </AccordionTrigger>
+                            <AccordionContent>
+                              <div className="flex flex-wrap gap-1.5 pt-1">
+                                {["38001","38002","38003","38004","38005","38006","38007","38008","38009","38010","38011","38120","38129","38130","38139","38140","38150","38160","38170","38180","38190","38291","38294"].map(cp => (
+                                  <span key={cp} className="text-xs bg-background px-2 py-0.5 rounded border border-border/50 text-muted-foreground">{cp}</span>
+                                ))}
+                              </div>
+                            </AccordionContent>
+                          </AccordionItem>
+                          <AccordionItem value="la-laguna" className="border-b-0 border-border/30">
+                            <AccordionTrigger className="text-xs py-2 hover:no-underline text-muted-foreground hover:text-foreground">
+                              Ver códigos postales disponibles en La Laguna
+                            </AccordionTrigger>
+                            <AccordionContent>
+                              <div className="flex flex-wrap gap-1.5 pt-1">
+                                {["38201","38202","38203","38204","38205","38206","38207","38208","38240","38250","38260","38270","38290","38293","38296","38297","38320","38330"].map(cp => (
+                                  <span key={cp} className="text-xs bg-background px-2 py-0.5 rounded border border-border/50 text-muted-foreground">{cp}</span>
+                                ))}
+                              </div>
+                            </AccordionContent>
+                          </AccordionItem>
+                        </Accordion>
+                      </div>
                     )}
                   </CardContent>
                 </Card>
