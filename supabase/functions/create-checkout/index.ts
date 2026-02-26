@@ -18,7 +18,6 @@ const PRICE_MAP: Record<string, string> = {
   ebano: "price_1T2sWcDjVxta6u89DBZfEAlD",
   picea: "price_1T2sWoDjVxta6u899B2Eq9fI",
   esplendor: "price_1T2sX3DjVxta6u89Yfs5Lh3L",
-  
 };
 
 serve(async (req) => {
@@ -31,20 +30,80 @@ serve(async (req) => {
       apiVersion: "2025-08-27.basil",
     });
 
+    // Create Supabase admin client for server-side price validation
+    const supabaseAdmin = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+    );
+
     const body = await req.json();
-    const {
-      items,
-      formData,
-      shippingCost,
-      subtotal,
-      total,
-    } = body;
+    const { items, formData, shippingCost, subtotal, total } = body;
 
     if (!items || items.length === 0) {
       throw new Error("No items in cart");
     }
 
-    // Build line items from cart
+    // === SERVER-SIDE PRICE VALIDATION ===
+    // Fetch real product prices from the database
+    const productIds = items.map((item: any) => item.id);
+    const { data: dbProducts, error: productsError } = await supabaseAdmin
+      .from("products")
+      .select("id, price, name")
+      .in("id", productIds);
+
+    if (productsError || !dbProducts) {
+      throw new Error("Failed to fetch product prices for validation");
+    }
+
+    // Build a price lookup map from DB
+    const dbPriceMap: Record<string, number> = {};
+    const dbNameMap: Record<string, string> = {};
+    for (const p of dbProducts) {
+      dbPriceMap[p.id] = Number(p.price);
+      dbNameMap[p.id] = p.name;
+    }
+
+    // Validate every item exists in DB and recalculate totals server-side
+    let serverSubtotal = 0;
+    for (const item of items) {
+      if (dbPriceMap[item.id] === undefined) {
+        throw new Error(`Product not found in database: ${item.id}`);
+      }
+      serverSubtotal += dbPriceMap[item.id] * item.quantity;
+    }
+
+    // Validate shipping cost from delivery_zones
+    let serverShippingCost = 0;
+    if (formData.deliveryType === "delivery" && formData.shippingPostalCode) {
+      const { data: zone } = await supabaseAdmin
+        .from("delivery_zones")
+        .select("delivery_cost")
+        .eq("postal_code", formData.shippingPostalCode)
+        .eq("is_active", true)
+        .maybeSingle();
+
+      if (zone) {
+        serverShippingCost = Math.max(Number(zone.delivery_cost), 7);
+      } else {
+        throw new Error(`Postal code not in delivery zone: ${formData.shippingPostalCode}`);
+      }
+    }
+
+    const serverTotal = serverSubtotal + serverShippingCost;
+
+    // Log any discrepancy for audit (but use server values)
+    if (
+      Math.abs(serverSubtotal - subtotal) > 0.01 ||
+      Math.abs(serverShippingCost - shippingCost) > 0.01 ||
+      Math.abs(serverTotal - total) > 0.01
+    ) {
+      console.warn("Price mismatch detected!", {
+        client: { subtotal, shippingCost, total },
+        server: { subtotal: serverSubtotal, shippingCost: serverShippingCost, total: serverTotal },
+      });
+    }
+
+    // Build line items from cart using validated DB prices
     const line_items = items.map((item: any) => {
       const priceId = PRICE_MAP[item.id];
       if (!priceId) {
@@ -56,15 +115,15 @@ serve(async (req) => {
       };
     });
 
-    // Add shipping as a line item if applicable
-    if (shippingCost > 0) {
+    // Add shipping as a line item if applicable (using server-validated cost)
+    if (serverShippingCost > 0) {
       line_items.push({
         price_data: {
           currency: "eur",
           product_data: {
             name: "Gastos de envío",
           },
-          unit_amount: Math.round(shippingCost * 100),
+          unit_amount: Math.round(serverShippingCost * 100),
         },
         quantity: 1,
       });
@@ -72,7 +131,7 @@ serve(async (req) => {
 
     const origin = req.headers.get("origin") || "https://floristerialara.lovable.app";
 
-    // Store order metadata for later retrieval
+    // Store order metadata using SERVER-VALIDATED values
     const metadata: Record<string, string> = {
       first_name: formData.firstName,
       last_name: formData.lastName,
@@ -85,9 +144,9 @@ serve(async (req) => {
       time_slot: formData.timeSlot || "",
       delivery_date: formData.deliveryDate || "",
       card_message: formData.cardMessage || "",
-      shipping_cost: String(shippingCost),
-      subtotal: String(subtotal),
-      total: String(total),
+      shipping_cost: String(serverShippingCost),
+      subtotal: String(serverSubtotal),
+      total: String(serverTotal),
     };
 
     if (formData.deliveryType === "delivery") {
@@ -98,12 +157,12 @@ serve(async (req) => {
       metadata.shipping_postal_code = formData.shippingPostalCode || "";
     }
 
-    // Items JSON for order_items creation
+    // Items JSON with SERVER-VALIDATED prices
     metadata.items_json = JSON.stringify(
       items.map((item: any) => ({
         id: item.id,
-        name: item.name,
-        price: item.price,
+        name: dbNameMap[item.id] || item.name,
+        price: dbPriceMap[item.id],
         quantity: item.quantity,
         image: item.image || "",
       }))

@@ -30,7 +30,6 @@ serve(async (req) => {
       );
     }
 
-    // Use service role to insert into DB
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
@@ -52,12 +51,63 @@ serve(async (req) => {
       );
     }
 
+    // === SERVER-SIDE PRICE RE-VALIDATION ===
+    // Parse items from metadata (these were already validated in create-checkout)
+    let items: any[] = [];
+    try {
+      items = JSON.parse(meta.items_json || "[]");
+    } catch {
+      console.error("Failed to parse items_json");
+    }
+
+    // Re-validate prices against DB before inserting the order
+    if (items.length > 0) {
+      const productIds = items.map((item: any) => item.id);
+      const { data: dbProducts } = await supabaseAdmin
+        .from("products")
+        .select("id, price")
+        .in("id", productIds);
+
+      if (dbProducts) {
+        const dbPriceMap: Record<string, number> = {};
+        for (const p of dbProducts) {
+          dbPriceMap[p.id] = Number(p.price);
+        }
+
+        let verifiedSubtotal = 0;
+        for (const item of items) {
+          const dbPrice = dbPriceMap[item.id];
+          if (dbPrice === undefined) {
+            console.warn(`Product ${item.id} not found in DB during verification`);
+            continue;
+          }
+          // Override item price with DB price
+          item.price = dbPrice;
+          verifiedSubtotal += dbPrice * item.quantity;
+        }
+
+        const metaSubtotal = parseFloat(meta.subtotal || "0");
+        const metaShipping = parseFloat(meta.shipping_cost || "0");
+        const metaTotal = parseFloat(meta.total || "0");
+
+        if (Math.abs(verifiedSubtotal - metaSubtotal) > 0.01) {
+          console.warn("Subtotal mismatch at verification!", {
+            metaSubtotal,
+            verifiedSubtotal,
+          });
+          // Use the verified values
+          meta.subtotal = String(verifiedSubtotal);
+          meta.total = String(verifiedSubtotal + metaShipping);
+        }
+      }
+    }
+
     // Parse shipping name into first/last
     const shippingNameParts = (meta.shipping_name || "").split(" ");
     const shippingFirstName = shippingNameParts[0] || "";
     const shippingLastName = shippingNameParts.slice(1).join(" ") || "";
 
-    // Create order
+    // Create order with validated values
     const { data: order, error: orderError } = await supabaseAdmin
       .from("orders")
       .insert({
@@ -85,8 +135,8 @@ serve(async (req) => {
         total: parseFloat(meta.total || "0"),
         status: "paid",
         stripe_session_id: session_id,
-        stripe_payment_intent_id: typeof session.payment_intent === "string" 
-          ? session.payment_intent 
+        stripe_payment_intent_id: typeof session.payment_intent === "string"
+          ? session.payment_intent
           : session.payment_intent?.id || null,
       })
       .select("id")
@@ -97,14 +147,7 @@ serve(async (req) => {
       throw new Error(`Failed to create order: ${orderError.message}`);
     }
 
-    // Create order items
-    let items: any[] = [];
-    try {
-      items = JSON.parse(meta.items_json || "[]");
-    } catch {
-      console.error("Failed to parse items_json");
-    }
-
+    // Create order items with DB-validated prices
     if (items.length > 0 && order) {
       const orderItems = items.map((item: any) => ({
         order_id: order.id,
