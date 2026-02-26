@@ -2,20 +2,79 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+const ALLOWED_ORIGINS = [
+  "https://floristerialara.lovable.app",
+  "https://id-preview--986b453d-add0-426f-9f5c-a093e1df7b0c.lovable.app",
+];
+
+function getCorsHeaders(req: Request) {
+  const origin = req.headers.get("origin") || "";
+  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  return {
+    "Access-Control-Allow-Origin": allowedOrigin,
+    "Access-Control-Allow-Headers":
+      "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  };
+}
+
+const RATE_LIMIT_MAX = 15;
+const RATE_LIMIT_WINDOW_SECONDS = 60;
+
+async function checkRateLimit(supabaseAdmin: any, clientIp: string, functionName: string): Promise<boolean> {
+  const windowStart = new Date(Date.now() - RATE_LIMIT_WINDOW_SECONDS * 1000).toISOString();
+  const { count } = await supabaseAdmin
+    .from("rate_limits")
+    .select("*", { count: "exact", head: true })
+    .eq("client_ip", clientIp)
+    .eq("function_name", functionName)
+    .gte("created_at", windowStart);
+
+  if ((count || 0) >= RATE_LIMIT_MAX) return false;
+  await supabaseAdmin.from("rate_limits").insert({ client_ip: clientIp, function_name: functionName });
+  return true;
+}
+
+// HMAC signing for internal calls to send-order-email
+async function signPayload(payload: string, secret: string): Promise<string> {
+  const encoder = new TextEncoder();
+  const key = await crypto.subtle.importKey(
+    "raw", encoder.encode(secret), { name: "HMAC", hash: "SHA-256" }, false, ["sign"]
+  );
+  const sig = await crypto.subtle.sign("HMAC", key, encoder.encode(payload));
+  return Array.from(new Uint8Array(sig)).map(b => b.toString(16).padStart(2, "0")).join("");
+}
 
 serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req);
+
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  const origin = req.headers.get("origin") || "";
+  if (!ALLOWED_ORIGINS.includes(origin)) {
+    return new Response(JSON.stringify({ error: "Forbidden" }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 403,
+    });
   }
 
   try {
     const { session_id } = await req.json();
     if (!session_id) throw new Error("Missing session_id");
+
+    const supabaseAdmin = createClient(
+      Deno.env.get("SUPABASE_URL") ?? "",
+      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
+    );
+
+    // Rate limiting
+    const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+    const allowed = await checkRateLimit(supabaseAdmin, clientIp, "verify-payment");
+    if (!allowed) {
+      return new Response(JSON.stringify({ error: "Too many requests" }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 429,
+      });
+    }
 
     const stripe = new Stripe(Deno.env.get("STRIPE_SECRET_KEY") || "", {
       apiVersion: "2025-08-27.basil",
@@ -30,14 +89,7 @@ serve(async (req) => {
       );
     }
 
-    const supabaseAdmin = createClient(
-      Deno.env.get("SUPABASE_URL") ?? "",
-      Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
-    );
-
-    const meta = session.metadata || {};
-
-    // Check if order already exists for this session
+    // Check if order already exists
     const { data: existingOrder } = await supabaseAdmin
       .from("orders")
       .select("id")
@@ -51,16 +103,12 @@ serve(async (req) => {
       );
     }
 
-    // === SERVER-SIDE PRICE RE-VALIDATION ===
-    // Parse items from metadata (these were already validated in create-checkout)
-    let items: any[] = [];
-    try {
-      items = JSON.parse(meta.items_json || "[]");
-    } catch {
-      console.error("Failed to parse items_json");
-    }
+    const meta = session.metadata || {};
 
-    // Re-validate prices against DB before inserting the order
+    // Re-validate prices against DB
+    let items: any[] = [];
+    try { items = JSON.parse(meta.items_json || "[]"); } catch { console.error("Failed to parse items_json"); }
+
     if (items.length > 0) {
       const productIds = items.map((item: any) => item.id);
       const { data: dbProducts } = await supabaseAdmin
@@ -70,44 +118,31 @@ serve(async (req) => {
 
       if (dbProducts) {
         const dbPriceMap: Record<string, number> = {};
-        for (const p of dbProducts) {
-          dbPriceMap[p.id] = Number(p.price);
-        }
+        for (const p of dbProducts) dbPriceMap[p.id] = Number(p.price);
 
         let verifiedSubtotal = 0;
         for (const item of items) {
           const dbPrice = dbPriceMap[item.id];
-          if (dbPrice === undefined) {
-            console.warn(`Product ${item.id} not found in DB during verification`);
-            continue;
-          }
-          // Override item price with DB price
+          if (dbPrice === undefined) { console.warn(`Product ${item.id} not found`); continue; }
           item.price = dbPrice;
           verifiedSubtotal += dbPrice * item.quantity;
         }
 
         const metaSubtotal = parseFloat(meta.subtotal || "0");
         const metaShipping = parseFloat(meta.shipping_cost || "0");
-        const metaTotal = parseFloat(meta.total || "0");
 
         if (Math.abs(verifiedSubtotal - metaSubtotal) > 0.01) {
-          console.warn("Subtotal mismatch at verification!", {
-            metaSubtotal,
-            verifiedSubtotal,
-          });
-          // Use the verified values
+          console.warn("Subtotal mismatch at verification!", { metaSubtotal, verifiedSubtotal });
           meta.subtotal = String(verifiedSubtotal);
           meta.total = String(verifiedSubtotal + metaShipping);
         }
       }
     }
 
-    // Parse shipping name into first/last
     const shippingNameParts = (meta.shipping_name || "").split(" ");
     const shippingFirstName = shippingNameParts[0] || "";
     const shippingLastName = shippingNameParts.slice(1).join(" ") || "";
 
-    // Create order with validated values
     const { data: order, error: orderError } = await supabaseAdmin
       .from("orders")
       .insert({
@@ -147,7 +182,6 @@ serve(async (req) => {
       throw new Error(`Failed to create order: ${orderError.message}`);
     }
 
-    // Create order items with DB-validated prices
     if (items.length > 0 && order) {
       const orderItems = items.map((item: any) => ({
         order_id: order.id,
@@ -159,26 +193,19 @@ serve(async (req) => {
         total_price: item.price * item.quantity,
       }));
 
-      const { error: itemsError } = await supabaseAdmin
-        .from("order_items")
-        .insert(orderItems);
-
-      if (itemsError) {
-        console.error("Order items insert error:", itemsError);
-      }
+      const { error: itemsError } = await supabaseAdmin.from("order_items").insert(orderItems);
+      if (itemsError) console.error("Order items insert error:", itemsError);
     }
 
-    // Send order confirmation email (fire-and-forget, don't block response)
+    // Send order confirmation email with HMAC signature
     try {
       const emailPayload = {
         to: meta.email,
         customerName: `${meta.first_name} ${meta.last_name}`,
         orderId: order?.id || "",
         items: items.map((item: any) => ({
-          name: item.name,
-          quantity: item.quantity,
-          unitPrice: item.price,
-          totalPrice: item.price * item.quantity,
+          name: item.name, quantity: item.quantity,
+          unitPrice: item.price, totalPrice: item.price * item.quantity,
         })),
         subtotal: parseFloat(meta.subtotal || "0"),
         shippingCost: parseFloat(meta.shipping_cost || "0"),
@@ -193,14 +220,19 @@ serve(async (req) => {
 
       const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
       const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+      const hmacSecret = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+
+      const bodyStr = JSON.stringify(emailPayload);
+      const signature = await signPayload(bodyStr, hmacSecret);
 
       fetch(`${supabaseUrl}/functions/v1/send-order-email`, {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
           Authorization: `Bearer ${supabaseAnonKey}`,
+          "x-internal-signature": signature,
         },
-        body: JSON.stringify(emailPayload),
+        body: bodyStr,
       }).catch((emailErr) => console.error("Email send failed:", emailErr));
     } catch (emailErr) {
       console.error("Email payload error:", emailErr);
