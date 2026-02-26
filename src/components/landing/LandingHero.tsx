@@ -1,7 +1,14 @@
 import { motion } from "framer-motion";
-import { ArrowDown, Clock, MapPin } from "lucide-react";
+import { ArrowDown, Clock, MapPin, Check } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import heroImage from "@/assets/hero-flowers.jpg";
+
+const trustPoints = [
+  "50+ años de experiencia",
+  "Entrega fiable y puntual",
+  "Flores de máxima frescura",
+  "Asesoramiento personalizado",
+];
 
 const LandingHero = () => {
   const scrollToProducts = () => {
@@ -43,8 +50,25 @@ const LandingHero = () => {
             </h1>
 
             <p className="text-base text-muted-foreground max-w-lg">
-              Arreglos florales artesanales desde 1985. Entrega en La Laguna y alrededores.
+              Arreglos florales artesanales desde 1975. Entrega en La Laguna y alrededores.
             </p>
+
+            {/* Trust Points */}
+            <motion.div
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              transition={{ duration: 0.6, delay: 0.4 }}
+              className="grid grid-cols-2 gap-x-4 gap-y-2"
+            >
+              {trustPoints.map((point) => (
+                <div key={point} className="flex items-center gap-2">
+                  <div className="flex-shrink-0 w-5 h-5 rounded-full bg-primary flex items-center justify-center">
+                    <Check className="w-3 h-3 text-primary-foreground" />
+                  </div>
+                  <span className="text-sm text-foreground font-medium">{point}</span>
+                </div>
+              ))}
+            </motion.div>
 
             <div className="flex items-center gap-4 text-sm text-muted-foreground">
               <div className="flex items-center gap-2">
@@ -53,7 +77,7 @@ const LandingHero = () => {
               </div>
             </div>
 
-            <div className="pt-4">
+            <div className="pt-2">
               <Button
                 onClick={scrollToProducts}
                 className="btn-botanical text-lg py-6 px-8 font-medium gap-2"

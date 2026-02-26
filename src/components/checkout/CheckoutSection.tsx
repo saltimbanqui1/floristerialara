@@ -3,6 +3,7 @@ import { motion } from "framer-motion";
 import { format } from "date-fns";
 import { es } from "date-fns/locale";
 import { Calendar as CalendarIcon, Truck, Store, Copy, Check, AlertCircle, MapPin, Minus, Plus, Trash2, Loader2, MessageCircle } from "lucide-react";
+import { Checkbox } from "@/components/ui/checkbox";
 import { z } from "zod";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
@@ -19,7 +20,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Separator } from "@/components/ui/separator";
 import { Form, FormControl, FormField, FormItem, FormLabel, FormMessage } from "@/components/ui/form";
 import { Alert, AlertDescription } from "@/components/ui/alert";
-import { Accordion, AccordionContent, AccordionItem, AccordionTrigger } from "@/components/ui/accordion";
+import { PrivacyPolicyModal, TermsModal } from "@/components/legal/LegalModals";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useCart } from "@/contexts/CartContext";
@@ -69,7 +70,8 @@ const getShippingInfo = (postalCode: string, isPickup: boolean, deliveryZones: D
 
   const zone = deliveryZones.find(z => z.postal_code === postalCode);
   if (zone) {
-    return { cost: zone.delivery_cost, zoneName: zone.zone_name, isValid: true };
+    const cost = Math.max(zone.delivery_cost, 7);
+    return { cost, zoneName: zone.zone_name, isValid: true };
   }
 
   return { 
@@ -111,6 +113,9 @@ const CheckoutSection = () => {
   const [copiedBilling, setCopiedBilling] = useState(false);
   const [isProcessing, setIsProcessing] = useState(false);
   const [deliveryZones, setDeliveryZones] = useState<DeliveryZone[]>([]);
+  const [acceptedTerms, setAcceptedTerms] = useState(false);
+  const [showPrivacy, setShowPrivacy] = useState(false);
+  const [showTerms, setShowTerms] = useState(false);
 
   useEffect(() => {
     const fetchZones = async () => {
@@ -605,7 +610,7 @@ const CheckoutSection = () => {
                             <AlertDescription className="text-sm">
                               <span className="font-semibold">{shippingInfo.errorMessage}</span>
                               <a
-                                href={`https://wa.me/34922251318?text=${encodeURIComponent("Hola, me gustaría consultar sobre envío a mi código postal: " + shippingPostalCode)}`}
+                                href={`https://wa.me/34629455043?text=${encodeURIComponent("Hola, me gustaría consultar sobre envío a mi código postal: " + shippingPostalCode)}`}
                                 target="_blank"
                                 rel="noopener noreferrer"
                                 className="inline-flex items-center gap-1.5 ml-2 font-semibold underline underline-offset-2 hover:opacity-80"
@@ -619,52 +624,6 @@ const CheckoutSection = () => {
                       </motion.div>
                     )}
 
-                    {/* Shipping Info - Delivery Zones */}
-                    {!isPickup && (
-                      <div className="mt-4 p-4 bg-muted/50 rounded-lg border border-border/50">
-                        <div className="flex items-center gap-2 mb-2">
-                          <Truck className="h-4 w-4 text-primary" />
-                          <span className="text-sm font-medium text-foreground">Zonas de reparto</span>
-                        </div>
-                        <p className="text-xs text-muted-foreground mb-3">
-                          Repartimos exclusivamente en los siguientes municipios de Tenerife. Si tu zona no aparece,{" "}
-                          <a
-                            href={`https://wa.me/34922251318?text=${encodeURIComponent("Hola, me gustaría consultar sobre envío a mi zona.")}`}
-                            target="_blank"
-                            rel="noopener noreferrer"
-                            className="text-primary underline underline-offset-2 hover:opacity-80"
-                          >
-                            contáctanos por WhatsApp
-                          </a>.
-                        </p>
-                        <Accordion type="single" collapsible className="w-full">
-                          <AccordionItem value="santa-cruz" className="border-border/30">
-                            <AccordionTrigger className="text-xs py-2 hover:no-underline text-muted-foreground hover:text-foreground">
-                              Ver códigos postales disponibles en Santa Cruz
-                            </AccordionTrigger>
-                            <AccordionContent>
-                              <div className="flex flex-wrap gap-1.5 pt-1">
-                                {["38001","38002","38003","38004","38005","38006","38007","38008","38009","38010","38011","38120","38129","38130","38139","38140","38150","38160","38170","38180","38190","38291","38294"].map(cp => (
-                                  <span key={cp} className="text-xs bg-background px-2 py-0.5 rounded border border-border/50 text-muted-foreground">{cp}</span>
-                                ))}
-                              </div>
-                            </AccordionContent>
-                          </AccordionItem>
-                          <AccordionItem value="la-laguna" className="border-b-0 border-border/30">
-                            <AccordionTrigger className="text-xs py-2 hover:no-underline text-muted-foreground hover:text-foreground">
-                              Ver códigos postales disponibles en La Laguna
-                            </AccordionTrigger>
-                            <AccordionContent>
-                              <div className="flex flex-wrap gap-1.5 pt-1">
-                                {["38201","38202","38203","38204","38205","38206","38207","38208","38240","38250","38260","38270","38290","38293","38296","38297","38320","38330"].map(cp => (
-                                  <span key={cp} className="text-xs bg-background px-2 py-0.5 rounded border border-border/50 text-muted-foreground">{cp}</span>
-                                ))}
-                              </div>
-                            </AccordionContent>
-                          </AccordionItem>
-                        </Accordion>
-                      </div>
-                    )}
                   </CardContent>
                 </Card>
               </motion.div>
@@ -711,7 +670,7 @@ const CheckoutSection = () => {
                                 </div>
                                 <p className="text-xs text-muted-foreground mt-1">El coste varía según la zona</p>
                               </Label>
-                              <span className="font-medium text-primary text-sm">desde 3,00 €</span>
+                              <span className="font-medium text-primary text-sm">desde 7,00 €</span>
                             </div>
 
                             <div className={cn(
@@ -943,7 +902,7 @@ const CheckoutSection = () => {
                       <AlertDescription className="flex flex-wrap items-center gap-1">
                         <span className="font-semibold">Fuera de rango, consultar por WhatsApp</span>
                         <a
-                          href={`https://wa.me/34922251318?text=${encodeURIComponent("Hola, me gustaría consultar sobre envío a mi código postal: " + shippingPostalCode)}`}
+                          href={`https://wa.me/34629455043?text=${encodeURIComponent("Hola, me gustaría consultar sobre envío a mi código postal: " + shippingPostalCode)}`}
                           target="_blank"
                           rel="noopener noreferrer"
                           className="inline-flex items-center gap-1.5 font-semibold underline underline-offset-2 hover:opacity-80"
@@ -955,13 +914,33 @@ const CheckoutSection = () => {
                     </Alert>
                   )}
 
+                  {/* Privacy Policy Checkbox */}
+                  <div className="flex items-start gap-3 mt-4 p-3 rounded-lg border border-border bg-muted/30">
+                    <Checkbox
+                      id="accept-terms"
+                      checked={acceptedTerms}
+                      onCheckedChange={(checked) => setAcceptedTerms(checked === true)}
+                      className="mt-0.5"
+                    />
+                    <label htmlFor="accept-terms" className="text-sm text-muted-foreground leading-snug cursor-pointer">
+                      He leído y acepto la{" "}
+                      <button type="button" onClick={() => setShowPrivacy(true)} className="text-primary underline underline-offset-2 hover:opacity-80">
+                        Política de Privacidad
+                      </button>{" "}
+                      y las{" "}
+                      <button type="button" onClick={() => setShowTerms(true)} className="text-primary underline underline-offset-2 hover:opacity-80">
+                        Condiciones de Compra
+                      </button>.
+                    </label>
+                  </div>
+
                   <Button
                     type="submit"
-                    disabled={!canPlaceOrder || isProcessing}
+                    disabled={!canPlaceOrder || isProcessing || !acceptedTerms}
                     className={cn(
                       "w-full text-lg py-6 font-medium mt-4",
                       "bg-primary text-primary-foreground hover:bg-primary/90",
-                      (!canPlaceOrder || isProcessing) && "opacity-50 cursor-not-allowed"
+                      (!canPlaceOrder || isProcessing || !acceptedTerms) && "opacity-50 cursor-not-allowed"
                     )}
                   >
                     {isProcessing ? (
@@ -984,6 +963,9 @@ const CheckoutSection = () => {
             </motion.div>
           </form>
         </Form>
+
+        <PrivacyPolicyModal open={showPrivacy} onOpenChange={setShowPrivacy} />
+        <TermsModal open={showTerms} onOpenChange={setShowTerms} />
       </div>
     </section>
   );

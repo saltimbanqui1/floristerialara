@@ -42,11 +42,11 @@ const HeroSection = () => {
 
             <div className="flex flex-wrap gap-5 pt-2">
               <a
-                href="tel:922251318"
+                href="tel:629455043"
                 className="inline-flex items-center gap-2 text-primary font-medium hover:underline"
               >
                 <Phone className="w-5 h-5" />
-                922 25 13 18
+                629 45 50 43
               </a>
               <div className="flex items-center gap-2 text-charcoal-light">
                 <Clock className="w-5 h-5" />
@@ -61,7 +61,7 @@ const HeroSection = () => {
                 className="btn-botanical text-lg py-6 px-8"
               >
                 <a
-                  href="https://wa.me/34922251318"
+                  href="https://wa.me/34629455043"
                   target="_blank"
                   rel="noopener noreferrer"
                 >

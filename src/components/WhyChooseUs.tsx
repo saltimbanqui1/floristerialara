@@ -50,7 +50,7 @@ const WhyChooseUs = () => {
               ¿Por Qué Elegirnos?
             </span>
             <h2 className="text-2xl md:text-3xl font-serif font-medium text-charcoal mt-3 mb-4">
-              Más de 35 años enamorando a La Laguna
+              Más de 50 años enamorando a La Laguna
             </h2>
             <p className="text-charcoal-light mb-6">
               Floristería Lara es un referente en el centro histórico. Generaciones
@@ -59,7 +59,7 @@ const WhyChooseUs = () => {
 
             <div className="flex flex-wrap gap-3">
               <div className="text-center px-4 py-3 bg-background rounded-lg border border-border">
-                <div className="text-2xl font-serif font-bold text-primary">35+</div>
+                <div className="text-2xl font-serif font-bold text-primary">50+</div>
                 <div className="text-xs text-charcoal-light">Años</div>
               </div>
               <div className="text-center px-4 py-3 bg-background rounded-lg border border-border">

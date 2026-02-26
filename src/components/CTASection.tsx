@@ -25,9 +25,9 @@ const CTASection = () => {
               asChild
               className="bg-primary-foreground text-primary hover:bg-primary-foreground/90 px-6"
             >
-              <a href="tel:922251318">
+              <a href="tel:629455043">
                 <Phone className="w-4 h-4 mr-2" />
-                922 25 13 18
+                629 45 50 43
               </a>
             </Button>
             <Button
@@ -35,7 +35,7 @@ const CTASection = () => {
               className="border-primary-foreground text-primary-foreground bg-transparent hover:bg-primary-foreground hover:text-primary px-6"
             >
               <a
-                href="https://wa.me/34922251318"
+                href="https://wa.me/34629455043"
                 target="_blank"
                 rel="noopener noreferrer"
               >
