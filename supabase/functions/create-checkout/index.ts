@@ -2,11 +2,20 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 
-const corsHeaders = {
-  "Access-Control-Allow-Origin": "*",
-  "Access-Control-Allow-Headers":
-    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-};
+const ALLOWED_ORIGINS = [
+  "https://floristerialara.lovable.app",
+  "https://id-preview--986b453d-add0-426f-9f5c-a093e1df7b0c.lovable.app",
+];
+
+function getCorsHeaders(req: Request) {
+  const origin = req.headers.get("origin") || "";
+  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
+  return {
+    "Access-Control-Allow-Origin": allowedOrigin,
+    "Access-Control-Allow-Headers":
+      "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+  };
+}
 
 // Map product IDs to Stripe price IDs
 const PRICE_MAP: Record<string, string> = {
@@ -20,9 +29,41 @@ const PRICE_MAP: Record<string, string> = {
   esplendor: "price_1T2sX3DjVxta6u89Yfs5Lh3L",
 };
 
+const RATE_LIMIT_MAX = 10; // max requests
+const RATE_LIMIT_WINDOW_SECONDS = 60; // per minute
+
+async function checkRateLimit(supabaseAdmin: any, clientIp: string, functionName: string): Promise<boolean> {
+  const windowStart = new Date(Date.now() - RATE_LIMIT_WINDOW_SECONDS * 1000).toISOString();
+
+  const { count } = await supabaseAdmin
+    .from("rate_limits")
+    .select("*", { count: "exact", head: true })
+    .eq("client_ip", clientIp)
+    .eq("function_name", functionName)
+    .gte("created_at", windowStart);
+
+  if ((count || 0) >= RATE_LIMIT_MAX) {
+    return false; // rate limited
+  }
+
+  await supabaseAdmin.from("rate_limits").insert({ client_ip: clientIp, function_name: functionName });
+  return true;
+}
+
 serve(async (req) => {
+  const corsHeaders = getCorsHeaders(req);
+
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
+  }
+
+  // Origin check
+  const origin = req.headers.get("origin") || "";
+  if (!ALLOWED_ORIGINS.includes(origin)) {
+    return new Response(JSON.stringify({ error: "Forbidden" }), {
+      headers: { ...corsHeaders, "Content-Type": "application/json" },
+      status: 403,
+    });
   }
 
   try {
@@ -30,11 +71,20 @@ serve(async (req) => {
       apiVersion: "2025-08-27.basil",
     });
 
-    // Create Supabase admin client for server-side price validation
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
       Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? ""
     );
+
+    // Rate limiting
+    const clientIp = req.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+    const allowed = await checkRateLimit(supabaseAdmin, clientIp, "create-checkout");
+    if (!allowed) {
+      return new Response(JSON.stringify({ error: "Too many requests. Please try again later." }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 429,
+      });
+    }
 
     const body = await req.json();
     const { items, formData, shippingCost, subtotal, total } = body;
@@ -44,7 +94,6 @@ serve(async (req) => {
     }
 
     // === SERVER-SIDE PRICE VALIDATION ===
-    // Fetch real product prices from the database
     const productIds = items.map((item: any) => item.id);
     const { data: dbProducts, error: productsError } = await supabaseAdmin
       .from("products")
@@ -55,7 +104,6 @@ serve(async (req) => {
       throw new Error("Failed to fetch product prices for validation");
     }
 
-    // Build a price lookup map from DB
     const dbPriceMap: Record<string, number> = {};
     const dbNameMap: Record<string, string> = {};
     for (const p of dbProducts) {
@@ -63,7 +111,6 @@ serve(async (req) => {
       dbNameMap[p.id] = p.name;
     }
 
-    // Validate every item exists in DB and recalculate totals server-side
     let serverSubtotal = 0;
     for (const item of items) {
       if (dbPriceMap[item.id] === undefined) {
@@ -72,7 +119,6 @@ serve(async (req) => {
       serverSubtotal += dbPriceMap[item.id] * item.quantity;
     }
 
-    // Validate shipping cost from delivery_zones
     let serverShippingCost = 0;
     if (formData.deliveryType === "delivery" && formData.shippingPostalCode) {
       const { data: zone } = await supabaseAdmin
@@ -91,7 +137,6 @@ serve(async (req) => {
 
     const serverTotal = serverSubtotal + serverShippingCost;
 
-    // Log any discrepancy for audit (but use server values)
     if (
       Math.abs(serverSubtotal - subtotal) > 0.01 ||
       Math.abs(serverShippingCost - shippingCost) > 0.01 ||
@@ -103,35 +148,25 @@ serve(async (req) => {
       });
     }
 
-    // Build line items from cart using validated DB prices
     const line_items = items.map((item: any) => {
       const priceId = PRICE_MAP[item.id];
       if (!priceId) {
         throw new Error(`Unknown product: ${item.id}`);
       }
-      return {
-        price: priceId,
-        quantity: item.quantity,
-      };
+      return { price: priceId, quantity: item.quantity };
     });
 
-    // Add shipping as a line item if applicable (using server-validated cost)
     if (serverShippingCost > 0) {
       line_items.push({
         price_data: {
           currency: "eur",
-          product_data: {
-            name: "Gastos de envío",
-          },
+          product_data: { name: "Gastos de envío" },
           unit_amount: Math.round(serverShippingCost * 100),
         },
         quantity: 1,
       });
     }
 
-    const origin = req.headers.get("origin") || "https://floristerialara.lovable.app";
-
-    // Store order metadata using SERVER-VALIDATED values
     const metadata: Record<string, string> = {
       first_name: formData.firstName,
       last_name: formData.lastName,
@@ -157,7 +192,6 @@ serve(async (req) => {
       metadata.shipping_postal_code = formData.shippingPostalCode || "";
     }
 
-    // Items JSON with SERVER-VALIDATED prices
     metadata.items_json = JSON.stringify(
       items.map((item: any) => ({
         id: item.id,
