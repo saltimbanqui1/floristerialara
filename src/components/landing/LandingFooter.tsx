@@ -1,5 +1,6 @@
 import { useState } from "react";
 import { Heart, Cookie, Phone, MapPin } from "lucide-react";
+import { Link } from "react-router-dom";
 import { useCookies } from "@/contexts/CookieContext";
 import {
   PrivacyPolicyModal,
@@ -157,6 +158,12 @@ const LandingFooter = () => {
                   Tratamiento de Datos
                 </button>
                 <span className="text-charcoal-light">|</span>
+                <Link
+                  to="/terminos-y-condiciones"
+                  className="text-charcoal-light hover:text-primary-foreground transition-colors"
+                >
+                  Términos y Condiciones
+                </Link>
                 <button
                   onClick={openSettings}
                   className="text-charcoal-light hover:text-primary-foreground transition-colors flex items-center gap-1"
