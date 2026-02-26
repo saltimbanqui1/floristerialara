@@ -773,47 +773,53 @@ const CheckoutSection = () => {
                   <FormField
                     control={form.control}
                     name="deliveryDate"
-                    render={({ field }) => (
-                      <FormItem className="flex flex-col">
-                        <FormLabel className="text-base font-medium">Fecha de entrega *</FormLabel>
-                        <Popover>
-                          <PopoverTrigger asChild>
-                            <FormControl>
-                              <Button
-                                variant="outline"
-                                className={cn(
-                                  "w-full md:w-80 pl-3 text-left font-normal",
-                                  !field.value && "text-muted-foreground"
-                                )}
-                              >
-                                {field.value ? (
-                                  format(field.value, "EEEE, d 'de' MMMM 'de' yyyy", { locale: es })
-                                ) : (
-                                  <span>Selecciona una fecha</span>
-                                )}
-                                <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
-                              </Button>
-                            </FormControl>
-                          </PopoverTrigger>
-                          <PopoverContent className="w-auto p-0" align="start">
-                            <Calendar
-                              mode="single"
-                              selected={field.value}
-                              onSelect={field.onChange}
-                              disabled={(date) => {
-                                const today = new Date();
-                                today.setHours(0, 0, 0, 0);
-                                return date < today;
-                              }}
-                              initialFocus
-                              className={cn("p-3 pointer-events-auto")}
-                              locale={es}
-                            />
-                          </PopoverContent>
-                        </Popover>
-                        <FormMessage />
-                      </FormItem>
-                    )}
+                    render={({ field }) => {
+                      const [calendarOpen, setCalendarOpen] = useState(false);
+                      return (
+                        <FormItem className="flex flex-col">
+                          <FormLabel className="text-base font-medium">Fecha de entrega *</FormLabel>
+                          <Popover open={calendarOpen} onOpenChange={setCalendarOpen}>
+                            <PopoverTrigger asChild>
+                              <FormControl>
+                                <Button
+                                  variant="outline"
+                                  className={cn(
+                                    "w-full md:w-80 pl-3 text-left font-normal",
+                                    !field.value && "text-muted-foreground"
+                                  )}
+                                >
+                                  {field.value ? (
+                                    format(field.value, "EEEE, d 'de' MMMM 'de' yyyy", { locale: es })
+                                  ) : (
+                                    <span>Selecciona una fecha</span>
+                                  )}
+                                  <CalendarIcon className="ml-auto h-4 w-4 opacity-50" />
+                                </Button>
+                              </FormControl>
+                            </PopoverTrigger>
+                            <PopoverContent className="w-auto p-0" align="start">
+                              <Calendar
+                                mode="single"
+                                selected={field.value}
+                                onSelect={(date) => {
+                                  field.onChange(date);
+                                  if (date) setCalendarOpen(false);
+                                }}
+                                disabled={(date) => {
+                                  const today = new Date();
+                                  today.setHours(0, 0, 0, 0);
+                                  return date < today;
+                                }}
+                                initialFocus
+                                className={cn("p-3 pointer-events-auto")}
+                                locale={es}
+                              />
+                            </PopoverContent>
+                          </Popover>
+                          <FormMessage />
+                        </FormItem>
+                      );
+                    }}
                   />
 
                   {/* Card Message */}
