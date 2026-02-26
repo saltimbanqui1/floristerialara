@@ -41,11 +41,11 @@ const LandingHeader = () => {
             </div>
 
             <a
-              href="tel:922251318"
+              href="tel:629455043"
               className="inline-flex items-center gap-2 text-primary font-medium hover:text-primary/80 transition-colors"
             >
               <Phone className="w-4 h-4" />
-              <span className="hidden sm:inline">922 25 13 18</span>
+              <span className="hidden sm:inline">629 45 50 43</span>
             </a>
 
             {/* Cart Button */}

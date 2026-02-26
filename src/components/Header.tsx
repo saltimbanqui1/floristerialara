@@ -37,9 +37,9 @@ const Header = () => {
               </a>
             ))}
             <Button asChild className="btn-botanical">
-              <a href="tel:922251318">
+              <a href="tel:629455043">
                 <Phone className="w-4 h-4 mr-2" />
-                922 25 13 18
+                629 45 50 43
               </a>
             </Button>
           </nav>
@@ -75,9 +75,9 @@ const Header = () => {
                   </a>
                 ))}
                 <Button asChild className="w-full btn-botanical mt-4">
-                  <a href="tel:922251318">
+                  <a href="tel:629455043">
                     <Phone className="w-4 h-4 mr-2" />
-                    922 25 13 18
+                    629 45 50 43
                   </a>
                 </Button>
               </div>

@@ -1,7 +1,6 @@
 import LandingHeader from "@/components/landing/LandingHeader";
 import LandingHero from "@/components/landing/LandingHero";
 import ServicesSection from "@/components/ServicesSection";
-import WhyChooseUs from "@/components/WhyChooseUs";
 import ProductShowcase from "@/components/landing/ProductShowcase";
 
 import CheckoutSection from "@/components/checkout/CheckoutSection";
@@ -18,7 +17,6 @@ const Index = () => {
       <main className="pt-16 md:pt-20">
         <LandingHero />
         <ServicesSection />
-        <WhyChooseUs />
         <ProductShowcase />
         
         {hasItemsInCart && <CheckoutSection />}

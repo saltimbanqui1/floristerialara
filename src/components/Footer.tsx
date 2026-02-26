@@ -48,7 +48,7 @@ const Footer = () => {
   const [showTerms, setShowTerms] = useState(false);
   const [showDataTreatment, setShowDataTreatment] = useState(false);
 
-  const whatsappNumber = "34922251318";
+  const whatsappNumber = "34629455043";
   const whatsappMessage = encodeURIComponent("¡Hola! Me gustaría hacer una consulta sobre vuestros arreglos florales.");
   const whatsappUrl = `https://wa.me/${whatsappNumber}?text=${whatsappMessage}`;
 
@@ -70,8 +70,8 @@ const Footer = () => {
                 </div>
                 <div className="flex items-center gap-2 text-charcoal-light text-sm">
                   <Phone className="w-4 h-4" />
-                  <a href="tel:+34922251318" className="hover:text-primary-foreground transition-colors">
-                    922 25 13 18
+                  <a href="tel:+34629455043" className="hover:text-primary-foreground transition-colors">
+                    629 45 50 43
                   </a>
                 </div>
               </div>

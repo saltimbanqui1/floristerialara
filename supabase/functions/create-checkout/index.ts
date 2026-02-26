@@ -117,6 +117,7 @@ serve(async (req) => {
       cancel_url: `${origin}/payment-canceled`,
       metadata,
       locale: "es",
+      payment_method_types: ["card"],
     });
 
     return new Response(JSON.stringify({ url: session.url }), {
