@@ -168,6 +168,44 @@ serve(async (req) => {
       }
     }
 
+    // Send order confirmation email (fire-and-forget, don't block response)
+    try {
+      const emailPayload = {
+        to: meta.email,
+        customerName: `${meta.first_name} ${meta.last_name}`,
+        orderId: order?.id || "",
+        items: items.map((item: any) => ({
+          name: item.name,
+          quantity: item.quantity,
+          unitPrice: item.price,
+          totalPrice: item.price * item.quantity,
+        })),
+        subtotal: parseFloat(meta.subtotal || "0"),
+        shippingCost: parseFloat(meta.shipping_cost || "0"),
+        total: parseFloat(meta.total || "0"),
+        deliveryType: meta.delivery_type || "delivery",
+        deliveryDate: meta.delivery_date || undefined,
+        deliveryTimeSlot: meta.time_slot || undefined,
+        shippingAddress: meta.shipping_address || undefined,
+        shippingCity: meta.shipping_city || undefined,
+        cardMessage: meta.card_message || undefined,
+      };
+
+      const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
+      const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+
+      fetch(`${supabaseUrl}/functions/v1/send-order-email`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${supabaseAnonKey}`,
+        },
+        body: JSON.stringify(emailPayload),
+      }).catch((emailErr) => console.error("Email send failed:", emailErr));
+    } catch (emailErr) {
+      console.error("Email payload error:", emailErr);
+    }
+
     return new Response(
       JSON.stringify({ success: true, order_id: order?.id }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }

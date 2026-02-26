@@ -65,7 +65,10 @@ const PaymentSuccess = () => {
               ¡Pago completado!
             </h1>
             <p className="text-muted-foreground">
-              Tu pedido ha sido registrado correctamente. Te contactaremos pronto para confirmar los detalles de entrega.
+              Tu pedido ha sido registrado correctamente. Recibirás un correo electrónico con el resumen de tu pedido y tu recibo en los próximos minutos.
+            </p>
+            <p className="text-sm text-muted-foreground">
+              Te contactaremos pronto para confirmar los detalles de entrega.
             </p>
             {orderId && (
               <p className="text-sm text-muted-foreground">
