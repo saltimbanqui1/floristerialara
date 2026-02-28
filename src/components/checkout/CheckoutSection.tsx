@@ -70,15 +70,14 @@ const getShippingInfo = (postalCode: string, isPickup: boolean, deliveryZones: D
 
   const zone = deliveryZones.find(z => z.postal_code === postalCode);
   if (zone) {
-    const cost = Math.max(zone.delivery_cost, 7);
-    return { cost, zoneName: zone.zone_name, isValid: true };
+    return { cost: zone.delivery_cost, zoneName: zone.zone_name, isValid: true };
   }
 
   return { 
     cost: 0, 
     zoneName: "", 
     isValid: false, 
-    errorMessage: "Fuera de rango, consultar por WhatsApp" 
+    errorMessage: "Lo sentimos, no realizamos repartos en esta zona por el momento" 
   };
 };
 
