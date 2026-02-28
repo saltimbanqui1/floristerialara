@@ -130,7 +130,7 @@ serve(async (req) => {
         .maybeSingle();
 
       if (zone) {
-        serverShippingCost = Math.max(Number(zone.delivery_cost), 7);
+        serverShippingCost = Number(zone.delivery_cost);
       } else {
         throw new Error(`Postal code not in delivery zone: ${formData.shippingPostalCode}`);
       }
