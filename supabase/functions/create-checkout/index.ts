@@ -211,9 +211,11 @@ serve(async (req) => {
       cancel_url: `${origin}/payment-canceled`,
       metadata,
       locale: "es",
-      // Solo tarjeta (incluye Apple Pay / Google Pay como wallets automáticos).
-      // Link queda excluido al no estar en la lista.
-      payment_method_types: ["card"],
+      // Métodos de pago automáticos (tarjeta, Apple Pay, Google Pay, etc.)
+      // Link desactivado para simplificar el flujo de invitado
+      payment_method_options: {
+        link: { enabled: false },
+      },
       phone_number_collection: { enabled: false },
     });
 
