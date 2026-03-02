@@ -11,17 +11,29 @@ const AdminLogin = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [isSignup, setIsSignup] = useState(false);
   const navigate = useNavigate();
 
-  const handleLogin = async (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setLoading(true);
 
     try {
+      if (isSignup) {
+        const { error } = await supabase.auth.signUp({ email, password });
+        if (error) throw error;
+        toast({
+          title: "Cuenta creada",
+          description: "Ahora inicia sesión. Un administrador debe asignarte el rol.",
+        });
+        setIsSignup(false);
+        setLoading(false);
+        return;
+      }
+
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
 
-      // Check admin role
       const { data: { user } } = await supabase.auth.getUser();
       if (!user) throw new Error("No se pudo obtener el usuario");
 
@@ -33,13 +45,13 @@ const AdminLogin = () => {
 
       if (roleError || !roles || roles.length === 0) {
         await supabase.auth.signOut();
-        throw new Error("No tienes permisos de administrador");
+        throw new Error("No tienes permisos de administrador. Contacta con el propietario.");
       }
 
       navigate("/dashboard-lara");
     } catch (error: any) {
       toast({
-        title: "Error de acceso",
+        title: "Error",
         description: error.message || "Credenciales incorrectas",
         variant: "destructive",
       });
@@ -58,7 +70,7 @@ const AdminLogin = () => {
           <p className="text-sm text-muted-foreground">Floristería Lara</p>
         </div>
 
-        <form onSubmit={handleLogin} className="space-y-4">
+        <form onSubmit={handleSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input
@@ -78,13 +90,25 @@ const AdminLogin = () => {
               value={password}
               onChange={(e) => setPassword(e.target.value)}
               required
+              minLength={6}
             />
           </div>
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : null}
-            Iniciar sesión
+            {isSignup ? "Crear cuenta" : "Iniciar sesión"}
           </Button>
         </form>
+
+        <p className="text-center text-sm text-muted-foreground">
+          {isSignup ? "¿Ya tienes cuenta?" : "¿Primera vez?"}{" "}
+          <button
+            type="button"
+            className="underline text-foreground"
+            onClick={() => setIsSignup(!isSignup)}
+          >
+            {isSignup ? "Iniciar sesión" : "Crear cuenta"}
+          </button>
+        </p>
       </div>
     </div>
   );
