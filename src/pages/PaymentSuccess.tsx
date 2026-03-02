@@ -5,8 +5,8 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useCart } from "@/contexts/CartContext";
 
-const MAX_RETRIES = 4;
-const RETRY_DELAYS = [2000, 4000, 6000, 8000];
+const MAX_RETRIES = 8;
+const RETRY_DELAY = 2000;
 
 const PaymentSuccess = () => {
   const [searchParams] = useSearchParams();
@@ -14,7 +14,6 @@ const PaymentSuccess = () => {
   const { clearCart } = useCart();
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [orderId, setOrderId] = useState<string | null>(null);
-  const attemptRef = useRef(0);
   const hasSucceeded = useRef(false);
 
   useEffect(() => {
@@ -24,47 +23,66 @@ const PaymentSuccess = () => {
       return;
     }
 
-    const verifyPayment = async (attempt: number): Promise<void> => {
-      if (hasSucceeded.current) return;
+    let cancelled = false;
 
-      try {
-        console.log(`Verify payment attempt ${attempt + 1}/${MAX_RETRIES + 1}`);
-        const { data, error } = await supabase.functions.invoke("verify-payment", {
-          body: { session_id: sessionId },
-        });
+    const verifyPayment = async (): Promise<void> => {
+      for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+        if (cancelled || hasSucceeded.current) return;
 
-        if (error) {
-          console.error("Verify payment error:", error);
-          throw error;
+        console.log(`Verify attempt ${attempt + 1}/${MAX_RETRIES}`);
+
+        // Strategy 1: Call verify-payment edge function
+        try {
+          const { data, error } = await supabase.functions.invoke("verify-payment", {
+            body: { session_id: sessionId },
+          });
+
+          if (!error && data?.success) {
+            hasSucceeded.current = true;
+            setStatus("success");
+            setOrderId(data.order_id);
+            clearCart();
+            return;
+          }
+        } catch (err) {
+          console.warn("verify-payment call failed:", err);
         }
 
-        if (data?.success) {
-          hasSucceeded.current = true;
-          setStatus("success");
-          setOrderId(data.order_id);
-          clearCart();
-          return;
+        // Strategy 2: Poll orders table directly as fallback
+        try {
+          const { data: order } = await supabase
+            .from("orders")
+            .select("id, status")
+            .eq("stripe_session_id", sessionId)
+            .maybeSingle();
+
+          if (order && order.status === "paid") {
+            hasSucceeded.current = true;
+            setStatus("success");
+            setOrderId(order.id);
+            clearCart();
+            return;
+          }
+        } catch (err) {
+          console.warn("DB poll failed:", err);
         }
 
-        // Payment not yet confirmed by Stripe - retry
-        throw new Error(data?.status || "not_paid");
-      } catch (err) {
-        console.error(`Attempt ${attempt + 1} failed:`, err);
-
-        if (attempt < MAX_RETRIES && !hasSucceeded.current) {
-          const delay = RETRY_DELAYS[attempt] || 8000;
-          console.log(`Retrying in ${delay}ms...`);
-          await new Promise((resolve) => setTimeout(resolve, delay));
-          return verifyPayment(attempt + 1);
+        // Wait before next attempt
+        if (attempt < MAX_RETRIES - 1) {
+          await new Promise((resolve) => setTimeout(resolve, RETRY_DELAY));
         }
+      }
 
-        if (!hasSucceeded.current) {
-          setStatus("error");
-        }
+      if (!hasSucceeded.current && !cancelled) {
+        setStatus("error");
       }
     };
 
-    verifyPayment(0);
+    verifyPayment();
+
+    return () => {
+      cancelled = true;
+    };
   }, [searchParams, clearCart]);
 
   return (
@@ -121,32 +139,41 @@ const PaymentSuccess = () => {
               onClick={() => {
                 setStatus("loading");
                 hasSucceeded.current = false;
-                attemptRef.current = 0;
                 const sessionId = searchParams.get("session_id");
                 if (sessionId) {
-                  const retry = async (attempt: number): Promise<void> => {
-                    try {
-                      const { data, error } = await supabase.functions.invoke("verify-payment", {
-                        body: { session_id: sessionId },
-                      });
-                      if (error) throw error;
-                      if (data?.success) {
-                        hasSucceeded.current = true;
-                        setStatus("success");
-                        setOrderId(data.order_id);
-                        clearCart();
-                        return;
-                      }
-                      throw new Error("not confirmed");
-                    } catch {
-                      if (attempt < 2) {
-                        await new Promise(r => setTimeout(r, 3000));
-                        return retry(attempt + 1);
-                      }
-                      setStatus("error");
+                  const retry = async () => {
+                    for (let i = 0; i < 3; i++) {
+                      try {
+                        const { data, error } = await supabase.functions.invoke("verify-payment", {
+                          body: { session_id: sessionId },
+                        });
+                        if (!error && data?.success) {
+                          hasSucceeded.current = true;
+                          setStatus("success");
+                          setOrderId(data.order_id);
+                          clearCart();
+                          return;
+                        }
+                      } catch {}
+                      try {
+                        const { data: order } = await supabase
+                          .from("orders")
+                          .select("id, status")
+                          .eq("stripe_session_id", sessionId)
+                          .maybeSingle();
+                        if (order?.status === "paid") {
+                          hasSucceeded.current = true;
+                          setStatus("success");
+                          setOrderId(order.id);
+                          clearCart();
+                          return;
+                        }
+                      } catch {}
+                      await new Promise(r => setTimeout(r, 2000));
                     }
+                    setStatus("error");
                   };
-                  retry(0);
+                  retry();
                 }
               }}
               className="bg-primary text-primary-foreground hover:bg-primary/90"
