@@ -2,20 +2,11 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 
-const ALLOWED_ORIGINS = [
-  "https://floristerialara.lovable.app",
-  "https://id-preview--986b453d-add0-426f-9f5c-a093e1df7b0c.lovable.app",
-];
-
-function getCorsHeaders(req: Request) {
-  const origin = req.headers.get("origin") || "";
-  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
-  return {
-    "Access-Control-Allow-Origin": allowedOrigin,
-    "Access-Control-Allow-Headers":
-      "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-  };
-}
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+};
 
 const RATE_LIMIT_MAX = 15;
 const RATE_LIMIT_WINDOW_SECONDS = 60;
@@ -44,17 +35,8 @@ async function signPayload(payload: string, secret: string): Promise<string> {
 }
 
 serve(async (req) => {
-  const corsHeaders = getCorsHeaders(req);
-
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
-  }
-
-  const origin = req.headers.get("origin") || "";
-  if (!ALLOWED_ORIGINS.includes(origin)) {
-    return new Response(JSON.stringify({ error: "Forbidden" }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 403,
-    });
   }
 
   try {
