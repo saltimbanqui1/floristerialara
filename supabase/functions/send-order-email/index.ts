@@ -16,6 +16,13 @@ async function verifySignature(payload: string, signature: string, secret: strin
   return crypto.subtle.verify("HMAC", key, sigBytes, encoder.encode(payload));
 }
 
+function escapeHtml(text: string): string {
+  const map: Record<string, string> = {
+    '&': '&amp;', '<': '&lt;', '>': '&gt;', '"': '&quot;', "'": '&#039;',
+  };
+  return text.replace(/[&<>"']/g, (char) => map[char]);
+}
+
 interface OrderEmailPayload {
   to: string;
   customerName: string;
@@ -38,7 +45,7 @@ function buildEmailHtml(data: OrderEmailPayload): string {
       (item) => `
       <tr>
         <td style="padding: 10px 0; border-bottom: 1px solid #eee; font-family: Inter, Arial, sans-serif; font-size: 14px; color: #333;">
-          ${item.name} × ${item.quantity}
+          ${escapeHtml(item.name)} × ${item.quantity}
         </td>
         <td style="padding: 10px 0; border-bottom: 1px solid #eee; font-family: Inter, Arial, sans-serif; font-size: 14px; color: #333; text-align: right;">
           ${item.totalPrice.toFixed(2)} €
@@ -51,19 +58,19 @@ function buildEmailHtml(data: OrderEmailPayload): string {
     data.deliveryType === "pickup"
       ? `<p style="margin: 0; color: #555;">Recogida en tienda</p>`
       : `
-        <p style="margin: 0 0 4px; color: #555;">${data.shippingAddress || ""}</p>
-        <p style="margin: 0 0 4px; color: #555;">${data.shippingCity || ""}</p>
+        <p style="margin: 0 0 4px; color: #555;">${escapeHtml(data.shippingAddress || "")}</p>
+        <p style="margin: 0 0 4px; color: #555;">${escapeHtml(data.shippingCity || "")}</p>
       `;
 
   const dateInfo = data.deliveryDate
-    ? `<p style="margin: 0; color: #555;"><strong>Fecha:</strong> ${data.deliveryDate}${data.deliveryTimeSlot ? ` (${data.deliveryTimeSlot})` : ""}</p>`
+    ? `<p style="margin: 0; color: #555;"><strong>Fecha:</strong> ${escapeHtml(data.deliveryDate)}${data.deliveryTimeSlot ? ` (${escapeHtml(data.deliveryTimeSlot)})` : ""}</p>`
     : "";
 
   const cardMessageSection = data.cardMessage
     ? `
       <div style="margin-top: 20px; padding: 16px; background: #fef9f0; border-left: 3px solid #d4a574; border-radius: 4px;">
         <p style="margin: 0 0 4px; font-weight: 600; color: #333; font-size: 13px;">💐 Mensaje en la tarjeta:</p>
-        <p style="margin: 0; color: #555; font-style: italic;">"${data.cardMessage}"</p>
+        <p style="margin: 0; color: #555; font-style: italic;">"${escapeHtml(data.cardMessage)}"</p>
       </div>`
     : "";
 
@@ -80,7 +87,7 @@ function buildEmailHtml(data: OrderEmailPayload): string {
       <p style="margin: 8px 0 0; color: rgba(255,255,255,0.85); font-size: 14px;">¡Gracias por tu pedido!</p>
     </div>
     <div style="background: #ffffff; padding: 32px 24px; border-radius: 0 0 12px 12px;">
-      <p style="font-size: 16px; color: #333; margin: 0 0 4px;">Hola <strong>${data.customerName}</strong>,</p>
+      <p style="font-size: 16px; color: #333; margin: 0 0 4px;">Hola <strong>${escapeHtml(data.customerName)}</strong>,</p>
       <p style="font-size: 14px; color: #555; margin: 0 0 24px;">Tu pedido ha sido confirmado y estamos preparándolo con mucho cariño.</p>
       <div style="background: #f5f1eb; padding: 12px 16px; border-radius: 8px; margin-bottom: 24px;">
         <p style="margin: 0; font-size: 13px; color: #777;">Referencia del pedido</p>
