@@ -257,13 +257,21 @@ const AdminDashboard = () => {
                   <TableCell>
                     <div className="space-y-0.5">
                       {order.items.map((item) => (
-                        <p key={item.id} className="text-sm">
-                          {item.quantity > 1 && <span className="text-muted-foreground">{item.quantity}× </span>}
-                          {item.product_name}
+                        <p key={item.id} className="text-sm flex justify-between gap-2">
+                          <span>
+                            {item.quantity > 1 && <span className="text-muted-foreground">{item.quantity}× </span>}
+                            {item.product_name}
+                          </span>
+                          <span className="text-muted-foreground whitespace-nowrap">{item.total_price.toFixed(2)} €</span>
                         </p>
                       ))}
                       {order.items.length === 0 && (
                         <span className="text-xs text-muted-foreground">Sin productos</span>
+                      )}
+                      {order.items.length > 0 && (
+                        <p className="text-xs font-medium text-foreground pt-1 border-t border-dashed text-right">
+                          Total: {order.total.toFixed(2)} €
+                        </p>
                       )}
                     </div>
                   </TableCell>
@@ -361,8 +369,9 @@ const AdminDashboard = () => {
             )}
 
             {order.items.map((item) => (
-              <p key={item.id}>
-                {item.quantity > 1 && `${item.quantity}× `}{item.product_name}
+              <p key={item.id} className="flex justify-between">
+                <span>{item.quantity > 1 && `${item.quantity}× `}{item.product_name}</span>
+                <span className="text-muted-foreground">{item.total_price.toFixed(2)} €</span>
               </p>
             ))}
 
