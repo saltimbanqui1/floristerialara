@@ -5,7 +5,7 @@ import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useCart } from "@/contexts/CartContext";
 
-const MAX_RETRIES = 8;
+const MAX_RETRIES = 10;
 const RETRY_DELAY = 2000;
 
 const PaymentSuccess = () => {
@@ -92,10 +92,10 @@ const PaymentSuccess = () => {
           <>
             <Loader2 className="w-16 h-16 text-primary animate-spin mx-auto" />
             <h1 className="text-2xl font-serif font-medium text-foreground">
-              Verificando tu pago...
+              Estamos confirmando tu pedido con el banco...
             </h1>
             <p className="text-muted-foreground">
-              Por favor, espera un momento. Esto puede tardar unos segundos.
+              No cierres esta ventana. Esto puede tardar unos segundos.
             </p>
           </>
         )}
