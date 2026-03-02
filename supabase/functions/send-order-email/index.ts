@@ -191,7 +191,7 @@ serve(async (req) => {
   } catch (error) {
     console.error("Send order email error:", error);
     return new Response(
-      JSON.stringify({ error: error.message }),
+      JSON.stringify({ error: "An error occurred processing your request." }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500 }
     );
   }
