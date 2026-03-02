@@ -211,11 +211,6 @@ serve(async (req) => {
       cancel_url: `${origin}/payment-canceled`,
       metadata,
       locale: "es",
-      // Métodos de pago automáticos (tarjeta, Apple Pay, Google Pay, etc.)
-      // Link desactivado para simplificar el flujo de invitado
-      payment_method_options: {
-        link: { enabled: false },
-      },
       phone_number_collection: { enabled: false },
     });
 
