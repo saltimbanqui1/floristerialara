@@ -35,7 +35,7 @@ const AdminLogin = () => {
       if (error) throw error;
 
       const { data: { user } } = await supabase.auth.getUser();
-      if (!user) throw new Error("No se pudo obtener el usuario");
+      if (!user) throw new Error("Acceso denegado. Verifica tus credenciales.");
 
       const { data: roles, error: roleError } = await supabase
         .from("user_roles")
@@ -45,14 +45,14 @@ const AdminLogin = () => {
 
       if (roleError || !roles || roles.length === 0) {
         await supabase.auth.signOut();
-        throw new Error("No tienes permisos de administrador. Contacta con el propietario.");
+        throw new Error("Acceso denegado. Verifica tus credenciales.");
       }
 
       navigate("/dashboard-lara");
     } catch (error: any) {
       toast({
-        title: "Error",
-        description: error.message || "Credenciales incorrectas",
+        title: "Error de autenticación",
+        description: "Acceso denegado. Verifica tus credenciales.",
         variant: "destructive",
       });
     } finally {
