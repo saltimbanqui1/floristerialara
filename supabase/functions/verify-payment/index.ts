@@ -2,20 +2,11 @@ import { serve } from "https://deno.land/std@0.190.0/http/server.ts";
 import Stripe from "https://esm.sh/stripe@18.5.0";
 import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 
-const ALLOWED_ORIGINS = [
-  "https://floristerialara.lovable.app",
-  "https://id-preview--986b453d-add0-426f-9f5c-a093e1df7b0c.lovable.app",
-];
-
-function getCorsHeaders(req: Request) {
-  const origin = req.headers.get("origin") || "";
-  const allowedOrigin = ALLOWED_ORIGINS.includes(origin) ? origin : ALLOWED_ORIGINS[0];
-  return {
-    "Access-Control-Allow-Origin": allowedOrigin,
-    "Access-Control-Allow-Headers":
-      "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
-  };
-}
+const corsHeaders = {
+  "Access-Control-Allow-Origin": "*",
+  "Access-Control-Allow-Headers":
+    "authorization, x-client-info, apikey, content-type, x-supabase-client-platform, x-supabase-client-platform-version, x-supabase-client-runtime, x-supabase-client-runtime-version",
+};
 
 const RATE_LIMIT_MAX = 15;
 const RATE_LIMIT_WINDOW_SECONDS = 60;
@@ -34,7 +25,6 @@ async function checkRateLimit(supabaseAdmin: any, clientIp: string, functionName
   return true;
 }
 
-// HMAC signing for internal calls to send-order-email
 async function signPayload(payload: string, secret: string): Promise<string> {
   const encoder = new TextEncoder();
   const key = await crypto.subtle.importKey(
@@ -45,22 +35,21 @@ async function signPayload(payload: string, secret: string): Promise<string> {
 }
 
 serve(async (req) => {
-  const corsHeaders = getCorsHeaders(req);
-
   if (req.method === "OPTIONS") {
     return new Response(null, { headers: corsHeaders });
   }
 
-  const origin = req.headers.get("origin") || "";
-  if (!ALLOWED_ORIGINS.includes(origin)) {
-    return new Response(JSON.stringify({ error: "Forbidden" }), {
-      headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 403,
-    });
-  }
-
   try {
     const { session_id } = await req.json();
-    if (!session_id) throw new Error("Missing session_id");
+    console.log("verify-payment called with session_id:", session_id);
+
+    if (!session_id) {
+      console.error("Missing session_id");
+      return new Response(
+        JSON.stringify({ error: "Missing session_id" }),
+        { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
+      );
+    }
 
     const supabaseAdmin = createClient(
       Deno.env.get("SUPABASE_URL") ?? "",
@@ -80,7 +69,9 @@ serve(async (req) => {
       apiVersion: "2025-08-27.basil",
     });
 
+    console.log("Retrieving Stripe session...");
     const session = await stripe.checkout.sessions.retrieve(session_id);
+    console.log("Stripe session status:", session.payment_status);
 
     if (session.payment_status !== "paid") {
       return new Response(
@@ -97,6 +88,7 @@ serve(async (req) => {
       .maybeSingle();
 
     if (existingOrder) {
+      console.log("Order already exists:", existingOrder.id);
       return new Response(
         JSON.stringify({ success: true, order_id: existingOrder.id, already_exists: true }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
@@ -104,6 +96,7 @@ serve(async (req) => {
     }
 
     const meta = session.metadata || {};
+    console.log("Processing order for:", meta.email);
 
     // Re-validate prices against DB
     let items: any[] = [];
@@ -181,6 +174,8 @@ serve(async (req) => {
       console.error("Order insert error:", orderError);
       throw new Error(`Failed to create order: ${orderError.message}`);
     }
+
+    console.log("Order created:", order?.id);
 
     if (items.length > 0 && order) {
       const orderItems = items.map((item: any) => ({

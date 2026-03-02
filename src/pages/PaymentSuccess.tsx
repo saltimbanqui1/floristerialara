@@ -1,9 +1,12 @@
-import { useEffect, useState } from "react";
+import { useEffect, useState, useRef } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
 import { CheckCircle, Loader2, AlertCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useCart } from "@/contexts/CartContext";
+
+const MAX_RETRIES = 4;
+const RETRY_DELAYS = [2000, 4000, 6000, 8000];
 
 const PaymentSuccess = () => {
   const [searchParams] = useSearchParams();
@@ -11,6 +14,8 @@ const PaymentSuccess = () => {
   const { clearCart } = useCart();
   const [status, setStatus] = useState<"loading" | "success" | "error">("loading");
   const [orderId, setOrderId] = useState<string | null>(null);
+  const attemptRef = useRef(0);
+  const hasSucceeded = useRef(false);
 
   useEffect(() => {
     const sessionId = searchParams.get("session_id");
@@ -19,28 +24,47 @@ const PaymentSuccess = () => {
       return;
     }
 
-    const verifyPayment = async () => {
+    const verifyPayment = async (attempt: number): Promise<void> => {
+      if (hasSucceeded.current) return;
+
       try {
+        console.log(`Verify payment attempt ${attempt + 1}/${MAX_RETRIES + 1}`);
         const { data, error } = await supabase.functions.invoke("verify-payment", {
           body: { session_id: sessionId },
         });
 
-        if (error) throw error;
+        if (error) {
+          console.error("Verify payment error:", error);
+          throw error;
+        }
 
         if (data?.success) {
+          hasSucceeded.current = true;
           setStatus("success");
           setOrderId(data.order_id);
           clearCart();
-        } else {
+          return;
+        }
+
+        // Payment not yet confirmed by Stripe - retry
+        throw new Error(data?.status || "not_paid");
+      } catch (err) {
+        console.error(`Attempt ${attempt + 1} failed:`, err);
+
+        if (attempt < MAX_RETRIES && !hasSucceeded.current) {
+          const delay = RETRY_DELAYS[attempt] || 8000;
+          console.log(`Retrying in ${delay}ms...`);
+          await new Promise((resolve) => setTimeout(resolve, delay));
+          return verifyPayment(attempt + 1);
+        }
+
+        if (!hasSucceeded.current) {
           setStatus("error");
         }
-      } catch (err) {
-        console.error("Payment verification failed:", err);
-        setStatus("error");
       }
     };
 
-    verifyPayment();
+    verifyPayment(0);
   }, [searchParams, clearCart]);
 
   return (
@@ -53,7 +77,7 @@ const PaymentSuccess = () => {
               Verificando tu pago...
             </h1>
             <p className="text-muted-foreground">
-              Por favor, espera un momento.
+              Por favor, espera un momento. Esto puede tardar unos segundos.
             </p>
           </>
         )}
@@ -93,6 +117,42 @@ const PaymentSuccess = () => {
             <p className="text-muted-foreground">
               No pudimos verificar tu pago. Si el cobro fue realizado, contacta con nosotros y lo resolveremos.
             </p>
+            <Button
+              onClick={() => {
+                setStatus("loading");
+                hasSucceeded.current = false;
+                attemptRef.current = 0;
+                const sessionId = searchParams.get("session_id");
+                if (sessionId) {
+                  const retry = async (attempt: number): Promise<void> => {
+                    try {
+                      const { data, error } = await supabase.functions.invoke("verify-payment", {
+                        body: { session_id: sessionId },
+                      });
+                      if (error) throw error;
+                      if (data?.success) {
+                        hasSucceeded.current = true;
+                        setStatus("success");
+                        setOrderId(data.order_id);
+                        clearCart();
+                        return;
+                      }
+                      throw new Error("not confirmed");
+                    } catch {
+                      if (attempt < 2) {
+                        await new Promise(r => setTimeout(r, 3000));
+                        return retry(attempt + 1);
+                      }
+                      setStatus("error");
+                    }
+                  };
+                  retry(0);
+                }
+              }}
+              className="bg-primary text-primary-foreground hover:bg-primary/90"
+            >
+              Reintentar verificación
+            </Button>
             <Button
               onClick={() => navigate("/")}
               variant="outline"
