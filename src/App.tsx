@@ -10,6 +10,8 @@ import NotFound from "./pages/NotFound";
 import PaymentSuccess from "./pages/PaymentSuccess";
 import PaymentCanceled from "./pages/PaymentCanceled";
 import TermsAndConditions from "./pages/TermsAndConditions";
+import AdminLogin from "./pages/AdminLogin";
+import AdminDashboard from "./pages/AdminDashboard";
 import CookieBanner from "@/components/cookies/CookieBanner";
 import CartSheet from "@/components/cart/CartSheet";
 
@@ -30,6 +32,8 @@ const App = () => (
               <Route path="/payment-success" element={<PaymentSuccess />} />
               <Route path="/payment-canceled" element={<PaymentCanceled />} />
               <Route path="/terminos-y-condiciones" element={<TermsAndConditions />} />
+              <Route path="/admin-login" element={<AdminLogin />} />
+              <Route path="/dashboard-lara" element={<AdminDashboard />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
