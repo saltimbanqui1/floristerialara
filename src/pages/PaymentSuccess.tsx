@@ -1,6 +1,6 @@
 import { useEffect, useState, useRef } from "react";
 import { useSearchParams, useNavigate } from "react-router-dom";
-import { CheckCircle, Loader2, AlertCircle } from "lucide-react";
+import { CheckCircle, Loader2, AlertCircle, MessageCircle } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { supabase } from "@/integrations/supabase/client";
 import { useCart } from "@/contexts/CartContext";
@@ -135,6 +135,27 @@ const PaymentSuccess = () => {
             <p className="text-muted-foreground">
               No pudimos verificar tu pago. Si el cobro fue realizado, contacta con nosotros y lo resolveremos.
             </p>
+
+            <div className="bg-muted/50 rounded-lg p-5 space-y-3 border border-border">
+              <p className="text-sm text-foreground/80">
+                Si has realizado el pago y ves este mensaje, no te preocupes. Pulsa el botón para enviarnos el comprobante y confirmaremos tu pedido manualmente al instante.
+              </p>
+              <Button
+                asChild
+                className="w-full bg-[#25D366] hover:bg-[#128C7E] text-white font-medium text-base py-5 gap-2"
+                size="lg"
+              >
+                <a
+                  href="https://wa.me/34629455043?text=Hola!%20He%20tenido%20un%20problema%20con%20el%20pago%20en%20la%20web%20pero%20me%20lo%20han%20cobrado.%20Aquí%20tengo%20el%20comprobante."
+                  target="_blank"
+                  rel="noopener noreferrer"
+                >
+                  <MessageCircle className="w-5 h-5" />
+                  Contactar por WhatsApp ahora
+                </a>
+              </Button>
+            </div>
+
             <Button
               onClick={() => {
                 setStatus("loading");
@@ -176,13 +197,13 @@ const PaymentSuccess = () => {
                   retry();
                 }
               }}
-              className="bg-primary text-primary-foreground hover:bg-primary/90"
+              variant="outline"
             >
               Reintentar verificación
             </Button>
             <Button
               onClick={() => navigate("/")}
-              variant="outline"
+              variant="ghost"
             >
               Volver a la tienda
             </Button>
