@@ -88,10 +88,86 @@ serve(async (req) => {
     }
 
     const body = await req.json();
-    const { items, formData, shippingCost, subtotal, total } = body;
+    const { items, formData, shippingCost, subtotal, total, turnstileToken } = body;
 
-    if (!items || items.length === 0) {
+    // === TURNSTILE CAPTCHA VALIDATION ===
+    if (!turnstileToken || typeof turnstileToken !== "string") {
+      return new Response(JSON.stringify({ error: "CAPTCHA verification required." }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 400,
+      });
+    }
+
+    const turnstileSecret = Deno.env.get("TURNSTILE_SECRET_KEY") || "";
+    if (turnstileSecret) {
+      const turnstileRes = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
+        method: "POST",
+        headers: { "Content-Type": "application/x-www-form-urlencoded" },
+        body: new URLSearchParams({
+          secret: turnstileSecret,
+          response: turnstileToken,
+          remoteip: clientIp,
+        }),
+      });
+      const turnstileData = await turnstileRes.json();
+      if (!turnstileData.success) {
+        return new Response(JSON.stringify({ error: "CAPTCHA verification failed." }), {
+          headers: { ...corsHeaders, "Content-Type": "application/json" },
+          status: 403,
+        });
+      }
+    }
+
+    if (!items || !Array.isArray(items) || items.length === 0) {
       throw new Error("No items in cart");
+    }
+
+    // === SERVER-SIDE INPUT VALIDATION ===
+    const sanitize = (val: any, maxLen: number): string =>
+      typeof val === "string" ? val.trim().slice(0, maxLen) : "";
+
+    const validatedForm = {
+      firstName: sanitize(formData?.firstName, 50),
+      lastName: sanitize(formData?.lastName, 50),
+      email: sanitize(formData?.email, 100),
+      phone: sanitize(formData?.phone, 20),
+      billingAddress: sanitize(formData?.billingAddress, 200),
+      billingCity: sanitize(formData?.billingCity, 100),
+      billingPostalCode: sanitize(formData?.billingPostalCode, 10),
+      deliveryType: sanitize(formData?.deliveryType, 20),
+      timeSlot: sanitize(formData?.timeSlot, 50),
+      deliveryDate: sanitize(formData?.deliveryDate, 20),
+      cardMessage: sanitize(formData?.cardMessage, 300),
+      shippingName: sanitize(formData?.shippingName, 100),
+      shippingPhone: sanitize(formData?.shippingPhone, 20),
+      shippingAddress: sanitize(formData?.shippingAddress, 200),
+      shippingCity: sanitize(formData?.shippingCity, 100),
+      shippingPostalCode: sanitize(formData?.shippingPostalCode, 10),
+    };
+
+    // Validate required fields
+    if (!validatedForm.firstName || !validatedForm.lastName || !validatedForm.phone) {
+      throw new Error("Missing required customer information");
+    }
+
+    // Validate email format server-side
+    if (!validatedForm.email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+      throw new Error("Invalid email format");
+    }
+
+    // Validate delivery type
+    if (!["delivery", "pickup"].includes(validatedForm.deliveryType)) {
+      throw new Error("Invalid delivery type");
+    }
+
+    // Validate item quantities
+    for (const item of items) {
+      if (!item.id || typeof item.id !== "string" || item.id.length > 50) {
+        throw new Error("Invalid product ID");
+      }
+      if (!Number.isInteger(item.quantity) || item.quantity < 1 || item.quantity > 99) {
+        throw new Error("Invalid item quantity");
+      }
     }
 
     // === SERVER-SIDE PRICE VALIDATION ===
@@ -121,18 +197,18 @@ serve(async (req) => {
     }
 
     let serverShippingCost = 0;
-    if (formData.deliveryType === "delivery" && formData.shippingPostalCode) {
+    if (validatedForm.deliveryType === "delivery" && validatedForm.shippingPostalCode) {
       const { data: zone } = await supabaseAdmin
         .from("delivery_zones")
         .select("delivery_cost")
-        .eq("postal_code", formData.shippingPostalCode)
+        .eq("postal_code", validatedForm.shippingPostalCode)
         .eq("is_active", true)
         .maybeSingle();
 
       if (zone) {
         serverShippingCost = Number(zone.delivery_cost);
       } else {
-        throw new Error(`Postal code not in delivery zone: ${formData.shippingPostalCode}`);
+        throw new Error(`Postal code not in delivery zone: ${validatedForm.shippingPostalCode}`);
       }
     }
 
@@ -169,42 +245,42 @@ serve(async (req) => {
     }
 
     const metadata: Record<string, string> = {
-      first_name: formData.firstName,
-      last_name: formData.lastName,
-      email: formData.email,
-      phone: formData.phone,
-      billing_address: formData.billingAddress || "",
-      billing_city: formData.billingCity || "",
-      billing_postal_code: formData.billingPostalCode || "",
-      delivery_type: formData.deliveryType,
-      time_slot: formData.timeSlot || "",
-      delivery_date: formData.deliveryDate || "",
-      card_message: formData.cardMessage || "",
+      first_name: validatedForm.firstName,
+      last_name: validatedForm.lastName,
+      email: validatedForm.email,
+      phone: validatedForm.phone,
+      billing_address: validatedForm.billingAddress,
+      billing_city: validatedForm.billingCity,
+      billing_postal_code: validatedForm.billingPostalCode,
+      delivery_type: validatedForm.deliveryType,
+      time_slot: validatedForm.timeSlot,
+      delivery_date: validatedForm.deliveryDate,
+      card_message: validatedForm.cardMessage,
       shipping_cost: String(serverShippingCost),
       subtotal: String(serverSubtotal),
       total: String(serverTotal),
     };
 
-    if (formData.deliveryType === "delivery") {
-      metadata.shipping_name = formData.shippingName || "";
-      metadata.shipping_phone = formData.shippingPhone || "";
-      metadata.shipping_address = formData.shippingAddress || "";
-      metadata.shipping_city = formData.shippingCity || "";
-      metadata.shipping_postal_code = formData.shippingPostalCode || "";
+    if (validatedForm.deliveryType === "delivery") {
+      metadata.shipping_name = validatedForm.shippingName;
+      metadata.shipping_phone = validatedForm.shippingPhone;
+      metadata.shipping_address = validatedForm.shippingAddress;
+      metadata.shipping_city = validatedForm.shippingCity;
+      metadata.shipping_postal_code = validatedForm.shippingPostalCode;
     }
 
     metadata.items_json = JSON.stringify(
       items.map((item: any) => ({
         id: item.id,
-        name: dbNameMap[item.id] || item.name,
+        name: dbNameMap[item.id] || sanitize(item.name, 100),
         price: dbPriceMap[item.id],
         quantity: item.quantity,
-        image: item.image || "",
+        image: sanitize(item.image, 500),
       }))
     );
 
     const session = await stripe.checkout.sessions.create({
-      customer_email: formData.email,
+      customer_email: validatedForm.email,
       line_items,
       mode: "payment",
       success_url: `${origin}/payment-success?session_id={CHECKOUT_SESSION_ID}`,
