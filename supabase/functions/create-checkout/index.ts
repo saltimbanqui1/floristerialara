@@ -97,8 +97,15 @@ serve(async (req) => {
       });
     }
 
-    const turnstileSecret = Deno.env.get("TURNSTILE_SECRET_KEY") || "";
-    if (turnstileSecret) {
+    const turnstileSecret = Deno.env.get("TURNSTILE_SECRET_KEY");
+    if (!turnstileSecret) {
+      console.error("TURNSTILE_SECRET_KEY not configured");
+      return new Response(JSON.stringify({ error: "Service temporarily unavailable." }), {
+        headers: { ...corsHeaders, "Content-Type": "application/json" },
+        status: 503,
+      });
+    }
+    {
       const turnstileRes = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
         method: "POST",
         headers: { "Content-Type": "application/x-www-form-urlencoded" },
