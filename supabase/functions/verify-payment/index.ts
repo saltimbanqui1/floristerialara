@@ -62,10 +62,10 @@ serve(async (req) => {
   try {
     const { session_id } = await req.json();
 
-    if (!session_id) {
-      console.error("Missing session_id");
+    if (!session_id || typeof session_id !== "string" || !session_id.startsWith("cs_") || session_id.length > 200) {
+      console.error("Invalid session_id");
       return new Response(
-        JSON.stringify({ error: "Missing session_id" }),
+        JSON.stringify({ error: "Invalid session_id" }),
         { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 400 }
       );
     }
