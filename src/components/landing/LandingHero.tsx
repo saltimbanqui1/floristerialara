@@ -70,10 +70,13 @@ const LandingHero = () => {
               ))}
             </motion.div>
 
-            <div className="flex items-center gap-4 text-sm text-muted-foreground">
+            <div className="flex flex-col gap-1 text-sm text-muted-foreground">
               <div className="flex items-center gap-2">
                 <Clock className="w-4 h-4" />
-                <span>L-V: 9:00 - 20:00</span>
+                <span>L-J: 10:00–13:30 / 17:00–20:00</span>
+              </div>
+              <div className="flex items-center gap-2 ml-6">
+                <span>V: 10:00–14:00 / 17:00–20:00 · S: 10:00–14:00</span>
               </div>
             </div>
 
