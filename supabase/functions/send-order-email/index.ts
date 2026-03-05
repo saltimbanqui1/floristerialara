@@ -180,8 +180,32 @@ serve(async (req) => {
     const resendData = await resendRes.json();
 
     if (!resendRes.ok) {
-      console.error("Resend API error:", resendData);
+      console.error("Resend API error (customer):", resendData);
       throw new Error(`Resend error [${resendRes.status}]: ${JSON.stringify(resendData)}`);
+    }
+
+    // Send notification copy to store owner
+    const STORE_OWNER_EMAIL = "info@floreslara.com";
+    const ownerSubject = `🛒 Nuevo pedido #${payload.orderId.slice(0, 8).toUpperCase()} — ${payload.customerName} — ${payload.total.toFixed(2)} €`;
+
+    const ownerRes = await fetch("https://api.resend.com/emails", {
+      method: "POST",
+      headers: {
+        Authorization: `Bearer ${RESEND_API_KEY}`,
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        from: "Floristería Lara <pedidos@floristerialara.lovable.app>",
+        to: [STORE_OWNER_EMAIL],
+        subject: ownerSubject,
+        html,
+      }),
+    });
+
+    const ownerData = await ownerRes.json();
+    if (!ownerRes.ok) {
+      console.error("Resend API error (owner):", ownerData);
+      // Don't throw — customer email was already sent successfully
     }
 
     return new Response(
