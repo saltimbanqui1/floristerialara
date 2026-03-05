@@ -65,7 +65,6 @@ const ProductShowcase = () => {
           { id: "ebano", name: "Ébano", price: 48.00, description: "Composición elegante en tonos oscuros", size: "Composición elegante" },
           { id: "picea", name: "Picea", price: 33.15, original_price: 39.00, description: "Arreglo especial con descuento", size: "Arreglo especial" },
           { id: "esplendor", name: "Esplendor", price: 115.00, description: "Arreglo de lujo para ocasiones especiales", size: "Arreglo de lujo" },
-          { id: "prueba", name: "Producto de Prueba", price: 1.00, description: "Producto de prueba - 1€", size: "Prueba" },
         ]);
       } finally {
         setLoading(false);
