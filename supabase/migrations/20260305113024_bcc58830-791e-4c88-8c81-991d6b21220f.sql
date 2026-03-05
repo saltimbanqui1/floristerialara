@@ -1,0 +1,1 @@
+UPDATE products SET description = '[HIDDEN] Producto de prueba - no mostrar', price = 0 WHERE id = 'test-1euro';
