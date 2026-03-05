@@ -16,8 +16,8 @@ const Index = () => {
       <LandingHeader />
       <main className="pt-16 md:pt-20">
         <LandingHero />
-        <ServicesSection />
         <ProductShowcase />
+        <ServicesSection />
         
         {hasItemsInCart && <CheckoutSection />}
       </main>

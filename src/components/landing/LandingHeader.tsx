@@ -1,6 +1,11 @@
-import { Phone, MapPin, ShoppingCart } from "lucide-react";
+import { Phone, MapPin, ShoppingCart, Clock } from "lucide-react";
 import { useCart } from "@/contexts/CartContext";
 import { Button } from "@/components/ui/button";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 
 const LandingHeader = () => {
   const { totalItems, openCart } = useCart();
@@ -27,7 +32,7 @@ const LandingHeader = () => {
           </button>
 
           {/* Navigation */}
-          <nav className="flex items-center gap-4 md:gap-6">
+          <nav className="flex items-center gap-3 md:gap-5">
             <button
               onClick={scrollToProducts}
               className="hidden md:block text-muted-foreground hover:text-primary transition-colors font-medium"
@@ -39,6 +44,25 @@ const LandingHeader = () => {
               <MapPin className="w-4 h-4" />
               <span>La Laguna</span>
             </div>
+
+            {/* Hours with popover */}
+            <Popover>
+              <PopoverTrigger asChild>
+                <button className="hidden md:inline-flex items-center gap-1.5 text-muted-foreground text-sm hover:text-primary transition-colors">
+                  <Clock className="w-4 h-4" />
+                  <span>Horario</span>
+                </button>
+              </PopoverTrigger>
+              <PopoverContent className="w-64 p-4" align="end">
+                <h4 className="font-serif font-semibold text-foreground mb-2 text-sm">Horario de atención</h4>
+                <div className="space-y-1 text-sm text-muted-foreground">
+                  <div className="flex justify-between"><span>Lun – Jue</span><span>10:00–13:30 / 17:00–20:00</span></div>
+                  <div className="flex justify-between"><span>Viernes</span><span>10:00–14:00 / 17:00–20:00</span></div>
+                  <div className="flex justify-between"><span>Sábado</span><span>10:00–14:00</span></div>
+                  <div className="flex justify-between"><span>Domingo</span><span className="text-destructive">Cerrado</span></div>
+                </div>
+              </PopoverContent>
+            </Popover>
 
             <a
               href="tel:629455043"
