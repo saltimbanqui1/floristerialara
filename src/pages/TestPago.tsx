@@ -45,7 +45,7 @@ const TestPago = () => {
       <Card className="max-w-lg w-full">
         <CardHeader>
           <CardTitle className="font-serif text-2xl flex items-center gap-2">
-            <AlertTriangle className="h-6 w-6 text-amber-500" />
+            <AlertTriangle className="h-6 w-6 text-primary" />
             Página de prueba interna
           </CardTitle>
         </CardHeader>
