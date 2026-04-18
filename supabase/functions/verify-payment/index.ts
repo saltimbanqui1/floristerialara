@@ -5,6 +5,7 @@ import { createClient } from "npm:@supabase/supabase-js@2.57.2";
 const ALLOWED_ORIGINS = [
   "https://floristerialara.lovable.app",
   "https://id-preview--986b453d-add0-426f-9f5c-a093e1df7b0c.lovable.app",
+  "https://986b453d-add0-426f-9f5c-a093e1df7b0c.lovableproject.com",
 ];
 
 function getCorsHeaders(req: Request) {
