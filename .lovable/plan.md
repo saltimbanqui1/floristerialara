@@ -1,52 +1,35 @@
 
 
-## Estado actual confirmado
+El usuario quiere emails de confirmación de pedido profesionales. Ya tienen la edge function `send-order-email` que usa Resend con un dominio temporal (`pedidos@floristerialara.lovable.app`) que no funciona en producción para `info@floreslara.com`.
 
-**📧 Email destinatario tienda:** `manuplo2006@gmail.com`
-- Hardcodeado en `supabase/functions/send-order-email/index.ts` línea 188
-- Marcado como "TEMPORAL: cambiado para pruebas"
-- ⚠️ Recordatorio: este email **no llega actualmente** (Resend rechaza el dominio sin verificar). Solo cambiarlo aquí no hace que empiece a funcionar.
+**Mi recomendación**: usar **Lovable Emails** (built-in, sin API keys, sin verificar dominios manualmente, con cola de reintentos y supresión automática). El dominio del cliente es `floreslara.es` y se puede delegar el subdominio `notify.floreslara.es` a Lovable.
 
-**📱 WhatsApp destinatario tienda:** configurado vía secret `TWILIO_WHATSAPP_TO` en Lovable Cloud (no en código). El número exacto no lo veo desde aquí porque es un secret, pero confías en que es `655176536` — lo damos por bueno.
+**Plan a alto nivel**:
 
-**📱 WhatsApp remitente (sandbox Twilio):** secret `TWILIO_WHATSAPP_FROM` (probablemente el sandbox `+14155238886`).
+1. **Configurar dominio email** (`notify.floreslara.es`) — el usuario abre un diálogo, confirma, y Lovable provisiona DNS automáticamente.
 
----
+2. **Montar infraestructura email** — crea tablas (cola, supresión, log), cron job de envío y RPCs necesarias.
 
-## Cambios a realizar
+3. **Crear plantilla transaccional `order-confirmation`** en React Email que reemplaza el HTML actual hardcodeado en `send-order-email`. Usará la paleta de la tienda (verde botánico, crema floral, Cormorant Garamond, Inter). Recibirá props: nombre cliente, orderId, items, subtotal, envío, total, tipo entrega, dirección, fecha, mensaje tarjeta.
 
-**1. Email tienda** → cambiar `manuplo2006@gmail.com` por el del dueño en `send-order-email/index.ts` línea 188.
+4. **Adaptar `verify-payment`** para que en vez de invocar `send-order-email`, invoque `send-transactional-email` con la plantilla `order-confirmation` y el `idempotencyKey` derivado del orderId. Mantener notificación al dueño como segundo invoke con la misma plantilla pero a `info@floreslara.com`.
 
-**2. WhatsApp tienda** → actualizar el secret `TWILIO_WHATSAPP_TO` con el número del dueño (formato internacional: `+34XXXXXXXXX`). No requiere tocar código.
+5. **Retirar la edge function antigua `send-order-email`** una vez la nueva esté operativa (la dejo como deprecated, no la borro de golpe).
 
----
+6. **Comportamiento durante propagación DNS**: las plantillas y código quedan listos al instante; los envíos reales empiezan automáticamente cuando el DNS se verifica (puede tardar hasta 72h). El usuario ve el progreso en Cloud → Emails.
 
-## Sobre el cambio de número y Twilio (tu duda principal)
+**Archivos afectados**:
+- Nuevo: `supabase/functions/_shared/transactional-email-templates/order-confirmation.tsx` + `registry.ts`
+- Nuevo: `supabase/functions/send-transactional-email/index.ts` (lo crea el scaffold)
+- Nuevo: `supabase/functions/handle-email-unsubscribe/index.ts` + `handle-email-suppression/index.ts` (scaffold)
+- Nueva página: `/cancelar-suscripcion` (página unsubscribe en React)
+- Modificado: `supabase/functions/verify-payment/index.ts` (cambiar el invoke)
+- Config: actualización `supabase/config.toml` con las nuevas funciones
 
-**Estás usando el sandbox de Twilio WhatsApp** (es lo que viene por defecto con el connector). Eso implica:
+**Lo que NO cambia**:
+- WhatsApp Twilio sigue igual (ya funciona)
+- Lógica de pedidos, Stripe, carrito, RLS — sin tocar
+- El email sigue enviándose al cliente Y al dueño (`info@floreslara.com`) — dos invocaciones separadas
 
-- ⚠️ **El nuevo número del dueño DEBE darse de alta en el sandbox** antes de poder recibir mensajes. Si no, Twilio bloqueará los envíos silenciosamente.
-- Para activarlo: el dueño tiene que enviar un WhatsApp con el código `join <palabra-clave>` al número sandbox de Twilio (`+1 415 523 8886`). La palabra clave la ves en tu Twilio Console → Messaging → Try it out → Send a WhatsApp message.
-- Sin ese paso, **los pedidos seguirán cobrándose pero el aviso WhatsApp no llegará** y solo lo verás en los logs como error de Twilio.
-
-**Alternativa profesional (recomendada a futuro):** salir del sandbox aprobando un número WhatsApp Business propio con plantillas registradas en Meta. Es más trabajo (1-2 semanas de aprobación) pero quita la limitación del "join" y permite enviar a cualquier cliente.
-
----
-
-## Información que necesito de ti
-
-Antes de tocar nada, dime:
-
-1. **Email del dueño** para recibir copia de pedidos (ej: `dueño@floreslara.es`)
-2. **Número WhatsApp del dueño** en formato internacional (ej: `+34629455043`)
-3. **¿Confirmas que el dueño hará el "join sandbox"** desde su WhatsApp antes de probar? (si no, no llegarán los avisos)
-
----
-
-## Pasos que ejecutaré (modo default)
-
-1. Editar `send-order-email/index.ts` línea 188 con el email del dueño + quitar el comentario "TEMPORAL".
-2. Pedirte que actualices el secret `TWILIO_WHATSAPP_TO` mediante el flujo de secrets de Lovable Cloud (lo lanzo yo con la herramienta de secretos).
-3. Recordarte el paso del "join sandbox" por WhatsApp.
-4. Sugerir hacer un pedido de prueba final en `/test-pago` con el nuevo número activo.
+**Primer paso (requiere aprobación tuya)**: configurar el dominio `notify.floreslara.es`. Tras aprobar el plan, te abriré el diálogo para que lo confirmes con un clic.
 
