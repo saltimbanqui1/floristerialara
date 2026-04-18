@@ -6,6 +6,8 @@ const ALLOWED_ORIGINS = [
   "https://floristerialara.lovable.app",
   "https://id-preview--986b453d-add0-426f-9f5c-a093e1df7b0c.lovable.app",
   "https://986b453d-add0-426f-9f5c-a093e1df7b0c.lovableproject.com",
+  "https://floreslara.es",
+  "https://www.floreslara.es",
 ];
 
 function getCorsHeaders(req: Request) {
