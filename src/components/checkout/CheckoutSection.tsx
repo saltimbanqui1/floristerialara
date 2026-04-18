@@ -24,7 +24,7 @@ import { PrivacyPolicyModal, TermsModal } from "@/components/legal/LegalModals";
 import { cn } from "@/lib/utils";
 import { useToast } from "@/hooks/use-toast";
 import { useCart } from "@/contexts/CartContext";
-import { Turnstile } from "@marsidev/react-turnstile";
+
 
 // Import product images
 import presenciaImg from "@/assets/products/presencia.jpg";
@@ -116,7 +116,7 @@ const CheckoutSection = () => {
   const [acceptedTerms, setAcceptedTerms] = useState(false);
   const [showPrivacy, setShowPrivacy] = useState(false);
   const [showTerms, setShowTerms] = useState(false);
-  const [turnstileToken, setTurnstileToken] = useState<string | null>(null);
+  
 
   useEffect(() => {
     const fetchZones = async () => {
@@ -215,7 +215,7 @@ const CheckoutSection = () => {
           shippingCost: deliveryCost,
           subtotal,
           total,
-          turnstileToken: turnstileToken || "",
+          
         },
       });
 
@@ -942,22 +942,13 @@ const CheckoutSection = () => {
                     </label>
                   </div>
 
-                  <div className="flex justify-center mt-4">
-                    <Turnstile
-                      siteKey={import.meta.env.VITE_TURNSTILE_SITE_KEY || "1x00000000000000000000AA"}
-                      onSuccess={(token) => setTurnstileToken(token)}
-                      onExpire={() => setTurnstileToken(null)}
-                      onError={() => setTurnstileToken(null)}
-                    />
-                  </div>
-
                   <Button
                     type="submit"
-                    disabled={!canPlaceOrder || isProcessing || !acceptedTerms || !turnstileToken}
+                    disabled={!canPlaceOrder || isProcessing || !acceptedTerms}
                     className={cn(
                       "w-full text-lg py-6 font-medium mt-4",
                       "bg-primary text-primary-foreground hover:bg-primary/90",
-                      (!canPlaceOrder || isProcessing || !acceptedTerms || !turnstileToken) && "opacity-50 cursor-not-allowed"
+                      (!canPlaceOrder || isProcessing || !acceptedTerms) && "opacity-50 cursor-not-allowed"
                     )}
                   >
                     {isProcessing ? (
