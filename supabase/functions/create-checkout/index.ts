@@ -87,42 +87,7 @@ serve(async (req) => {
     }
 
     const body = await req.json();
-    const { items, formData, shippingCost, subtotal, total, turnstileToken } = body;
-
-    // === TURNSTILE CAPTCHA VALIDATION ===
-    if (!turnstileToken || typeof turnstileToken !== "string") {
-      return new Response(JSON.stringify({ error: "CAPTCHA verification required." }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 400,
-      });
-    }
-
-    const turnstileSecret = Deno.env.get("TURNSTILE_SECRET_KEY");
-    if (!turnstileSecret) {
-      console.error("TURNSTILE_SECRET_KEY not configured");
-      return new Response(JSON.stringify({ error: "Service temporarily unavailable." }), {
-        headers: { ...corsHeaders, "Content-Type": "application/json" },
-        status: 503,
-      });
-    }
-    {
-      const turnstileRes = await fetch("https://challenges.cloudflare.com/turnstile/v0/siteverify", {
-        method: "POST",
-        headers: { "Content-Type": "application/x-www-form-urlencoded" },
-        body: new URLSearchParams({
-          secret: turnstileSecret,
-          response: turnstileToken,
-          remoteip: clientIp,
-        }),
-      });
-      const turnstileData = await turnstileRes.json();
-      if (!turnstileData.success) {
-        return new Response(JSON.stringify({ error: "CAPTCHA verification failed." }), {
-          headers: { ...corsHeaders, "Content-Type": "application/json" },
-          status: 403,
-        });
-      }
-    }
+    const { items, formData, shippingCost, subtotal, total } = body;
 
     if (!items || !Array.isArray(items) || items.length === 0) {
       throw new Error("No items in cart");
