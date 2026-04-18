@@ -214,46 +214,7 @@ serve(async (req) => {
       if (itemsError) console.error("Order items insert error:", itemsError);
     }
 
-    // Send order confirmation email with HMAC signature
-    try {
-      const emailPayload = {
-        to: meta.email,
-        customerName: `${meta.first_name} ${meta.last_name}`,
-        orderId: order?.id || "",
-        items: items.map((item: any) => ({
-          name: item.name, quantity: item.quantity,
-          unitPrice: item.price, totalPrice: item.price * item.quantity,
-        })),
-        subtotal: parseFloat(meta.subtotal || "0"),
-        shippingCost: parseFloat(meta.shipping_cost || "0"),
-        total: parseFloat(meta.total || "0"),
-        deliveryType: meta.delivery_type || "delivery",
-        deliveryDate: meta.delivery_date || undefined,
-        deliveryTimeSlot: meta.time_slot || undefined,
-        shippingAddress: meta.shipping_address || undefined,
-        shippingCity: meta.shipping_city || undefined,
-        cardMessage: meta.card_message || undefined,
-      };
-
-      const supabaseUrl = Deno.env.get("SUPABASE_URL") ?? "";
-      const supabaseAnonKey = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
-      const hmacSecret = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
-
-      const bodyStr = JSON.stringify(emailPayload);
-      const signature = await signPayload(bodyStr, hmacSecret);
-
-      fetch(`${supabaseUrl}/functions/v1/send-order-email`, {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          Authorization: `Bearer ${supabaseAnonKey}`,
-          "x-internal-signature": signature,
-        },
-        body: bodyStr,
-      }).catch((emailErr) => console.error("Email send failed:", emailErr));
-    } catch (emailErr) {
-      console.error("Email payload error:", emailErr);
-    }
+    // TODO: Email confirmation will be re-wired to Lovable Emails (send-transactional-email) in next step.
 
     // Send WhatsApp notification to store owner with HMAC signature
     try {
