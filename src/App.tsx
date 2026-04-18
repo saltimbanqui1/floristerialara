@@ -12,6 +12,7 @@ import PaymentCanceled from "./pages/PaymentCanceled";
 import TermsAndConditions from "./pages/TermsAndConditions";
 import AdminLogin from "./pages/AdminLogin";
 import AdminDashboard from "./pages/AdminDashboard";
+import TestPago from "./pages/TestPago";
 import CookieBanner from "@/components/cookies/CookieBanner";
 import CartSheet from "@/components/cart/CartSheet";
 
@@ -34,6 +35,7 @@ const App = () => (
               <Route path="/terminos-y-condiciones" element={<TermsAndConditions />} />
               <Route path="/admin-login" element={<AdminLogin />} />
               <Route path="/dashboard-lara" element={<AdminDashboard />} />
+              <Route path="/test-pago" element={<TestPago />} />
               {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
               <Route path="*" element={<NotFound />} />
             </Routes>
