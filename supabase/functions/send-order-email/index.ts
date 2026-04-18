@@ -184,8 +184,8 @@ serve(async (req) => {
       throw new Error(`Resend error [${resendRes.status}]: ${JSON.stringify(resendData)}`);
     }
 
-    // Send notification copy to store owner (TEMPORAL: cambiado para pruebas)
-    const STORE_OWNER_EMAIL = "manuplo2006@gmail.com";
+    // Send notification copy to store owner
+    const STORE_OWNER_EMAIL = "info@floreslara.com";
     const ownerSubject = `🛒 Nuevo pedido #${payload.orderId.slice(0, 8).toUpperCase()} — ${payload.customerName} — ${payload.total.toFixed(2)} €`;
 
     const ownerRes = await fetch("https://api.resend.com/emails", {
