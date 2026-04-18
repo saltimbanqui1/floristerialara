@@ -252,6 +252,54 @@ serve(async (req) => {
       console.error("Email payload error:", emailErr);
     }
 
+    // Send WhatsApp notification to store owner with HMAC signature
+    try {
+      const waPayload = {
+        orderId: order?.id || "",
+        customerName: `${meta.first_name} ${meta.last_name}`,
+        customerEmail: meta.email,
+        customerPhone: meta.phone,
+        billingAddress: meta.billing_address || undefined,
+        billingCity: meta.billing_city || undefined,
+        billingPostalCode: meta.billing_postal_code || undefined,
+        items: items.map((item: any) => ({
+          name: item.name, quantity: item.quantity,
+          unitPrice: item.price, totalPrice: item.price * item.quantity,
+        })),
+        subtotal: parseFloat(meta.subtotal || "0"),
+        shippingCost: parseFloat(meta.shipping_cost || "0"),
+        total: parseFloat(meta.total || "0"),
+        deliveryType: meta.delivery_type || "delivery",
+        deliveryDate: meta.delivery_date || undefined,
+        deliveryTimeSlot: meta.time_slot || undefined,
+        shippingName: meta.shipping_name || undefined,
+        shippingPhone: meta.shipping_phone || undefined,
+        shippingAddress: meta.shipping_address || undefined,
+        shippingCity: meta.shipping_city || undefined,
+        shippingPostalCode: meta.shipping_postal_code || undefined,
+        cardMessage: meta.card_message || undefined,
+      };
+
+      const supabaseUrlWa = Deno.env.get("SUPABASE_URL") ?? "";
+      const supabaseAnonKeyWa = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+      const hmacSecretWa = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
+
+      const waBodyStr = JSON.stringify(waPayload);
+      const waSignature = await signPayload(waBodyStr, hmacSecretWa);
+
+      fetch(`${supabaseUrlWa}/functions/v1/send-whatsapp-notification`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${supabaseAnonKeyWa}`,
+          "x-internal-signature": waSignature,
+        },
+        body: waBodyStr,
+      }).catch((waErr) => console.error("WhatsApp send failed:", waErr));
+    } catch (waErr) {
+      console.error("WhatsApp payload error:", waErr);
+    }
+
     return new Response(
       JSON.stringify({ success: true, order_id: order?.id }),
       { headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200 }
