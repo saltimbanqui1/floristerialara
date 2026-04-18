@@ -214,7 +214,65 @@ serve(async (req) => {
       if (itemsError) console.error("Order items insert error:", itemsError);
     }
 
-    // TODO: Email confirmation will be re-wired to Lovable Emails (send-transactional-email) in next step.
+    // Send order confirmation email to customer (Lovable Emails)
+    try {
+      const supabaseUrlEmail = Deno.env.get("SUPABASE_URL") ?? "";
+      const supabaseAnonKeyEmail = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+
+      const emailBody = {
+        templateName: "order-confirmation",
+        recipientEmail: meta.email,
+        idempotencyKey: `order-confirmation-${order?.id}`,
+        templateData: {
+          customerName: meta.first_name || "",
+          orderId: order?.id || "",
+          items: items.map((item: any) => ({
+            name: item.name,
+            quantity: item.quantity,
+            unitPrice: item.price,
+            totalPrice: item.price * item.quantity,
+          })),
+          subtotal: parseFloat(meta.subtotal || "0"),
+          shippingCost: parseFloat(meta.shipping_cost || "0"),
+          total: parseFloat(meta.total || "0"),
+          deliveryType: meta.delivery_type || "delivery",
+          deliveryDate: meta.delivery_date || undefined,
+          deliveryTimeSlot: meta.time_slot || undefined,
+          shippingName: meta.shipping_name || undefined,
+          shippingAddress: meta.shipping_address || undefined,
+          shippingCity: meta.shipping_city || undefined,
+          shippingPostalCode: meta.shipping_postal_code || undefined,
+          cardMessage: meta.card_message || undefined,
+        },
+      };
+
+      fetch(`${supabaseUrlEmail}/functions/v1/send-transactional-email`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${supabaseAnonKeyEmail}`,
+        },
+        body: JSON.stringify(emailBody),
+      }).catch((emailErr) => console.error("Order confirmation email failed:", emailErr));
+
+      // Send a copy to the store owner
+      const ownerEmailBody = {
+        ...emailBody,
+        recipientEmail: "info@floreslara.com",
+        idempotencyKey: `order-confirmation-owner-${order?.id}`,
+      };
+
+      fetch(`${supabaseUrlEmail}/functions/v1/send-transactional-email`, {
+        method: "POST",
+        headers: {
+          "Content-Type": "application/json",
+          Authorization: `Bearer ${supabaseAnonKeyEmail}`,
+        },
+        body: JSON.stringify(ownerEmailBody),
+      }).catch((emailErr) => console.error("Owner notification email failed:", emailErr));
+    } catch (emailErr) {
+      console.error("Email payload error:", emailErr);
+    }
 
     // Send WhatsApp notification to store owner with HMAC signature
     try {
