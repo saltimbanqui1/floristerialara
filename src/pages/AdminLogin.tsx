@@ -11,7 +11,6 @@ const AdminLogin = () => {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
-  const [isSignup, setIsSignup] = useState(false);
   const navigate = useNavigate();
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -19,18 +18,6 @@ const AdminLogin = () => {
     setLoading(true);
 
     try {
-      if (isSignup) {
-        const { error } = await supabase.auth.signUp({ email, password });
-        if (error) throw error;
-        toast({
-          title: "Cuenta creada",
-          description: "Ahora inicia sesión. Un administrador debe asignarte el rol.",
-        });
-        setIsSignup(false);
-        setLoading(false);
-        return;
-      }
-
       const { error } = await supabase.auth.signInWithPassword({ email, password });
       if (error) throw error;
 
@@ -95,19 +82,12 @@ const AdminLogin = () => {
           </div>
           <Button type="submit" className="w-full" disabled={loading}>
             {loading ? <Loader2 className="animate-spin mr-2 h-4 w-4" /> : null}
-            {isSignup ? "Crear cuenta" : "Iniciar sesión"}
+            Iniciar sesión
           </Button>
         </form>
 
-        <p className="text-center text-sm text-muted-foreground">
-          {isSignup ? "¿Ya tienes cuenta?" : "¿Primera vez?"}{" "}
-          <button
-            type="button"
-            className="underline text-foreground"
-            onClick={() => setIsSignup(!isSignup)}
-          >
-            {isSignup ? "Iniciar sesión" : "Crear cuenta"}
-          </button>
+        <p className="text-center text-xs text-muted-foreground">
+          Las cuentas de administrador se crean por invitación.
         </p>
       </div>
     </div>
