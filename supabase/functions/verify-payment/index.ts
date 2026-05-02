@@ -217,7 +217,7 @@ serve(async (req) => {
     // Send order confirmation email to customer (Lovable Emails)
     try {
       const supabaseUrlEmail = Deno.env.get("SUPABASE_URL") ?? "";
-      const supabaseAnonKeyEmail = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+      const supabaseServiceKeyEmail = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 
       const emailBody = {
         templateName: "order-confirmation",
