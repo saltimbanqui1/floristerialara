@@ -30,14 +30,40 @@ function generateToken(): string {
     .join('')
 }
 
-// Auth note: this function uses verify_jwt = true in config.toml, so Supabase's
-// gateway validates the caller's JWT (anon or service_role) before the request
-// reaches this code. No in-function auth check is needed.
+// Auth: only callers presenting the service_role JWT may invoke this function.
+// This prevents abuse via the public anon key (which equals VITE_SUPABASE_PUBLISHABLE_KEY).
+// Internal callers (e.g. verify-payment) must use SUPABASE_SERVICE_ROLE_KEY in the Authorization header.
+function decodeJwtRole(authHeader: string | null): string | null {
+  if (!authHeader || !authHeader.startsWith('Bearer ')) return null
+  const token = authHeader.slice('Bearer '.length).trim()
+  const parts = token.split('.')
+  if (parts.length !== 3) return null
+  try {
+    const payload = parts[1].replace(/-/g, '+').replace(/_/g, '/')
+    const padded = payload + '='.repeat((4 - (payload.length % 4)) % 4)
+    const decoded = JSON.parse(atob(padded))
+    return typeof decoded?.role === 'string' ? decoded.role : null
+  } catch {
+    return null
+  }
+}
 
 Deno.serve(async (req) => {
   // Handle CORS preflight
   if (req.method === 'OPTIONS') {
     return new Response(null, { headers: corsHeaders })
+  }
+
+  // Restrict to service_role callers only
+  const callerRole = decodeJwtRole(req.headers.get('Authorization'))
+  if (callerRole !== 'service_role') {
+    return new Response(
+      JSON.stringify({ error: 'Forbidden' }),
+      {
+        status: 403,
+        headers: { ...corsHeaders, 'Content-Type': 'application/json' },
+      }
+    )
   }
 
   const supabaseUrl = Deno.env.get('SUPABASE_URL')

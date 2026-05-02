@@ -217,7 +217,7 @@ serve(async (req) => {
     // Send order confirmation email to customer (Lovable Emails)
     try {
       const supabaseUrlEmail = Deno.env.get("SUPABASE_URL") ?? "";
-      const supabaseAnonKeyEmail = Deno.env.get("SUPABASE_ANON_KEY") ?? "";
+      const supabaseServiceKeyEmail = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 
       const emailBody = {
         templateName: "order-confirmation",
@@ -250,7 +250,7 @@ serve(async (req) => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${supabaseAnonKeyEmail}`,
+          Authorization: `Bearer ${supabaseServiceKeyEmail}`,
         },
         body: JSON.stringify(emailBody),
       }).catch((emailErr) => console.error("Order confirmation email failed:", emailErr));
@@ -266,7 +266,7 @@ serve(async (req) => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${supabaseAnonKeyEmail}`,
+          Authorization: `Bearer ${supabaseServiceKeyEmail}`,
         },
         body: JSON.stringify(ownerEmailBody),
       }).catch((emailErr) => console.error("Owner notification email failed:", emailErr));
