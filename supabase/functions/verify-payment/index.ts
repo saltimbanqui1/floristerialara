@@ -250,7 +250,7 @@ serve(async (req) => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${supabaseAnonKeyEmail}`,
+          Authorization: `Bearer ${supabaseServiceKeyEmail}`,
         },
         body: JSON.stringify(emailBody),
       }).catch((emailErr) => console.error("Order confirmation email failed:", emailErr));
@@ -266,7 +266,7 @@ serve(async (req) => {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${supabaseAnonKeyEmail}`,
+          Authorization: `Bearer ${supabaseServiceKeyEmail}`,
         },
         body: JSON.stringify(ownerEmailBody),
       }).catch((emailErr) => console.error("Owner notification email failed:", emailErr));
