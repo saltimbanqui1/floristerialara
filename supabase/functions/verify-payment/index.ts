@@ -246,6 +246,7 @@ serve(async (req) => {
         },
       };
 
+      console.log("[verify-payment] Invoking send-transactional-email (customer):", meta.email);
       fetch(`${supabaseUrlEmail}/functions/v1/send-transactional-email`, {
         method: "POST",
         headers: {
@@ -253,7 +254,9 @@ serve(async (req) => {
           Authorization: `Bearer ${supabaseServiceKeyEmail}`,
         },
         body: JSON.stringify(emailBody),
-      }).catch((emailErr) => console.error("Order confirmation email failed:", emailErr));
+      })
+        .then(async (r) => console.log("[verify-payment] Customer email status:", r.status, await r.text().catch(() => "")))
+        .catch((emailErr) => console.error("[verify-payment] Customer email failed:", emailErr));
 
       // Send a copy to the store owner
       const ownerEmailBody = {
@@ -262,6 +265,7 @@ serve(async (req) => {
         idempotencyKey: `order-confirmation-owner-${order?.id}`,
       };
 
+      console.log("[verify-payment] Invoking send-transactional-email (owner)");
       fetch(`${supabaseUrlEmail}/functions/v1/send-transactional-email`, {
         method: "POST",
         headers: {
@@ -269,7 +273,9 @@ serve(async (req) => {
           Authorization: `Bearer ${supabaseServiceKeyEmail}`,
         },
         body: JSON.stringify(ownerEmailBody),
-      }).catch((emailErr) => console.error("Owner notification email failed:", emailErr));
+      })
+        .then(async (r) => console.log("[verify-payment] Owner email status:", r.status, await r.text().catch(() => "")))
+        .catch((emailErr) => console.error("[verify-payment] Owner email failed:", emailErr));
     } catch (emailErr) {
       console.error("Email payload error:", emailErr);
     }
