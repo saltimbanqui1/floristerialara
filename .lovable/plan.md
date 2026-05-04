@@ -1,35 +1,51 @@
+## Plan: arreglar notificaciones de pedidos (email + WhatsApp)
 
+El dominio `notify.floreslara.es` está verificado, pero los emails están **desactivados** a nivel de proyecto (por eso aparece "Emails disabled for this project" en el log). Para WhatsApp no hay logs del último pedido, así que necesitamos diagnosticar qué pasa.
 
-El usuario quiere emails de confirmación de pedido profesionales. Ya tienen la edge function `send-order-email` que usa Resend con un dominio temporal (`pedidos@floristerialara.lovable.app`) que no funciona en producción para `info@floreslara.com`.
+### 1. Reactivar emails de Lovable Cloud
 
-**Mi recomendación**: usar **Lovable Emails** (built-in, sin API keys, sin verificar dominios manualmente, con cola de reintentos y supresión automática). El dominio del cliente es `floreslara.es` y se puede delegar el subdominio `notify.floreslara.es` a Lovable.
+- Activar el envío de emails del proyecto (interruptor interno).
+- Confirmar que el dominio `notify.floreslara.es` sigue verificado (ya lo está).
+- Reintentar manualmente reenviar el email de confirmación del último pedido (`2022ab8d-…`) para validar que funciona end-to-end.
+- Verificar en la tabla de log que el siguiente intento aparece como `sent` y no como `dlq`.
 
-**Plan a alto nivel**:
+### 2. Mejorar diagnóstico de `send-whatsapp-notification`
 
-1. **Configurar dominio email** (`notify.floreslara.es`) — el usuario abre un diálogo, confirma, y Lovable provisiona DNS automáticamente.
+Añadir logs detallados para que en el próximo pedido sepamos exactamente qué pasa:
 
-2. **Montar infraestructura email** — crea tablas (cola, supresión, log), cron job de envío y RPCs necesarias.
+- Log al entrar (con `orderId`).
+- Log de la verificación HMAC (ok / falla).
+- Log de las variables Twilio detectadas (sin exponer valores: solo `from` enmascarado y longitud de `to`).
+- Log del payload final enviado a Twilio (To/From enmascarados, longitud del Body).
+- Log completo de la respuesta de Twilio (status + código de error + mensaje), incluso en caso de éxito.
+- Log de cualquier excepción con stack trace.
 
-3. **Crear plantilla transaccional `order-confirmation`** en React Email que reemplaza el HTML actual hardcodeado en `send-order-email`. Usará la paleta de la tienda (verde botánico, crema floral, Cormorant Garamond, Inter). Recibirá props: nombre cliente, orderId, items, subtotal, envío, total, tipo entrega, dirección, fecha, mensaje tarjeta.
+También añadir un log explícito en `verify-payment` justo antes y después del `fetch` a `send-whatsapp-notification`, para confirmar que la invocación se dispara (hoy es fire-and-forget y no sabemos si llega).
 
-4. **Adaptar `verify-payment`** para que en vez de invocar `send-order-email`, invoque `send-transactional-email` con la plantilla `order-confirmation` y el `idempotencyKey` derivado del orderId. Mantener notificación al dueño como segundo invoke con la misma plantilla pero a `info@floreslara.com`.
+### 3. Revisar / validar Twilio WhatsApp
 
-5. **Retirar la edge function antigua `send-order-email`** una vez la nueva esté operativa (la dejo como deprecated, no la borro de golpe).
+Comprobaremos los 3 secretos:
 
-6. **Comportamiento durante propagación DNS**: las plantillas y código quedan listos al instante; los envíos reales empiezan automáticamente cuando el DNS se verifica (puede tardar hasta 72h). El usuario ve el progreso en Cloud → Emails.
+- `TWILIO_API_KEY` (gestionado por el conector).
+- `TWILIO_WHATSAPP_FROM` — debe ser un número aprobado por Twilio para WhatsApp en formato `+E.164`. Posibilidades:
+  - **Sandbox de Twilio** (`+14155238886`): el destinatario tiene que haber enviado primero `join <palabra-clave>` desde su WhatsApp. Si no, los mensajes nunca llegan aunque la API responda 201.
+  - **Número WhatsApp Business propio**: debe estar registrado y aprobado en Twilio Console.
+- `TWILIO_WHATSAPP_TO` — debe estar en `+E.164` (ej. `+34629455043`).
 
-**Archivos afectados**:
-- Nuevo: `supabase/functions/_shared/transactional-email-templates/order-confirmation.tsx` + `registry.ts`
-- Nuevo: `supabase/functions/send-transactional-email/index.ts` (lo crea el scaffold)
-- Nuevo: `supabase/functions/handle-email-unsubscribe/index.ts` + `handle-email-suppression/index.ts` (scaffold)
-- Nueva página: `/cancelar-suscripcion` (página unsubscribe en React)
-- Modificado: `supabase/functions/verify-payment/index.ts` (cambiar el invoke)
-- Config: actualización `supabase/config.toml` con las nuevas funciones
+Acciones:
+- Tras desplegar los nuevos logs, hacer un pedido de prueba (1 €) y revisar los logs de ambas funciones.
+- Si Twilio responde con error 63007/63016/21211 → te guiaré paso a paso para corregir el número o salir del sandbox.
+- Si no hay logs en absoluto → el problema está en `verify-payment` antes de invocar WhatsApp.
 
-**Lo que NO cambia**:
-- WhatsApp Twilio sigue igual (ya funciona)
-- Lógica de pedidos, Stripe, carrito, RLS — sin tocar
-- El email sigue enviándose al cliente Y al dueño (`info@floreslara.com`) — dos invocaciones separadas
+### Detalles técnicos
 
-**Primer paso (requiere aprobación tuya)**: configurar el dominio `notify.floreslara.es`. Tras aprobar el plan, te abriré el diálogo para que lo confirmes con un clic.
+- Archivos a editar:
+  - `supabase/functions/send-whatsapp-notification/index.ts` — añadir logs.
+  - `supabase/functions/verify-payment/index.ts` — log antes/después del fetch a WhatsApp.
+- No se cambian secretos automáticamente; si hay que cambiar `TWILIO_WHATSAPP_FROM` te lo indicaré con el valor exacto a poner.
+- Reactivar emails se hace con la herramienta `toggle_project_emails` (no requiere migración ni cambios de código).
 
+### Resultado esperado
+
+- El próximo pedido genera un email de confirmación entregado al cliente y a `info@floreslara.com`.
+- Los logs de WhatsApp muestran exactamente por qué llega o no llega el mensaje, y podemos corregir Twilio en consecuencia.
