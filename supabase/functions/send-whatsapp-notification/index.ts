@@ -101,19 +101,24 @@ serve(async (req) => {
   }
 
   try {
+    console.log("[wa] Request received");
+
     // Verify HMAC signature (called only from verify-payment edge function)
     const bodyText = await req.text();
     const signature = req.headers.get("x-internal-signature") || "";
     const hmacSecret = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") ?? "";
 
-    if (!signature || !(await verifySignature(bodyText, signature, hmacSecret))) {
-      console.error("Invalid signature");
+    const sigOk = signature && (await verifySignature(bodyText, signature, hmacSecret));
+    console.log("[wa] HMAC verified:", !!sigOk, "sigPresent:", !!signature);
+    if (!sigOk) {
+      console.error("[wa] Invalid signature - rejecting");
       return new Response(JSON.stringify({ error: "Unauthorized" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 401,
       });
     }
 
     const data: WhatsAppPayload = JSON.parse(bodyText);
+    console.log("[wa] Processing orderId:", data.orderId);
 
     const LOVABLE_API_KEY = Deno.env.get("LOVABLE_API_KEY");
     const TWILIO_API_KEY = Deno.env.get("TWILIO_API_KEY");
