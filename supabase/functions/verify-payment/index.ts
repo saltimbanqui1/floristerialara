@@ -309,6 +309,7 @@ serve(async (req) => {
       const waBodyStr = JSON.stringify(waPayload);
       const waSignature = await signPayload(waBodyStr, hmacSecretWa);
 
+      console.log("[verify-payment] Invoking send-whatsapp-notification for order:", order?.id);
       fetch(`${supabaseUrlWa}/functions/v1/send-whatsapp-notification`, {
         method: "POST",
         headers: {
@@ -317,7 +318,9 @@ serve(async (req) => {
           "x-internal-signature": waSignature,
         },
         body: waBodyStr,
-      }).catch((waErr) => console.error("WhatsApp send failed:", waErr));
+      })
+        .then((r) => console.log("[verify-payment] WhatsApp invoke status:", r.status))
+        .catch((waErr) => console.error("[verify-payment] WhatsApp invoke failed:", waErr));
     } catch (waErr) {
       console.error("WhatsApp payload error:", waErr);
     }
