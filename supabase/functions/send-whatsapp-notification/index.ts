@@ -125,18 +125,30 @@ serve(async (req) => {
     const FROM = Deno.env.get("TWILIO_WHATSAPP_FROM");
     const TO = Deno.env.get("TWILIO_WHATSAPP_TO");
 
+    const mask = (v?: string) => v ? `${v.slice(0, 6)}…${v.slice(-3)} (len=${v.length})` : "MISSING";
+    console.log("[wa] Twilio config:", {
+      hasLovable: !!LOVABLE_API_KEY,
+      hasTwilio: !!TWILIO_API_KEY,
+      from: mask(FROM),
+      to: mask(TO),
+    });
+
     if (!LOVABLE_API_KEY || !TWILIO_API_KEY || !FROM || !TO) {
-      console.error("Missing Twilio config", {
-        hasLovable: !!LOVABLE_API_KEY, hasTwilio: !!TWILIO_API_KEY,
-        hasFrom: !!FROM, hasTo: !!TO,
-      });
+      console.error("[wa] Missing Twilio config");
       return new Response(JSON.stringify({ error: "Twilio not configured" }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500,
       });
     }
 
     const message = buildMessage(data);
-    console.log("Sending WhatsApp for order:", data.orderId);
+    const finalTo = FROM.startsWith("whatsapp:") ? TO : `whatsapp:${TO.replace(/^whatsapp:/, "")}`;
+    const finalFrom = FROM.startsWith("whatsapp:") ? FROM : `whatsapp:${FROM}`;
+    console.log("[wa] Sending to Twilio gateway:", {
+      to: mask(finalTo),
+      from: mask(finalFrom),
+      bodyLen: message.length,
+      orderId: data.orderId,
+    });
 
     const response = await fetch(`${GATEWAY_URL}/Messages.json`, {
       method: "POST",
@@ -145,28 +157,32 @@ serve(async (req) => {
         "X-Connection-Api-Key": TWILIO_API_KEY,
         "Content-Type": "application/x-www-form-urlencoded",
       },
-      body: new URLSearchParams({
-        To: FROM.startsWith("whatsapp:") ? TO : `whatsapp:${TO.replace(/^whatsapp:/, "")}`,
-        From: FROM.startsWith("whatsapp:") ? FROM : `whatsapp:${FROM}`,
-        Body: message,
-      }),
+      body: new URLSearchParams({ To: finalTo, From: finalFrom, Body: message }),
     });
 
-    const result = await response.json();
+    const result = await response.json().catch(() => ({}));
+    console.log("[wa] Twilio response:", {
+      status: response.status,
+      ok: response.ok,
+      sid: result?.sid,
+      errorCode: result?.code,
+      errorMessage: result?.message,
+      moreInfo: result?.more_info,
+    });
 
     if (!response.ok) {
-      console.error("Twilio error:", response.status, result);
+      console.error("[wa] Twilio send failed:", response.status, JSON.stringify(result));
       return new Response(JSON.stringify({ error: "Twilio send failed", details: result }), {
         headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500,
       });
     }
 
-    console.log("WhatsApp sent, SID:", result.sid);
+    console.log("[wa] WhatsApp accepted by Twilio. SID:", result.sid, "status:", result.status);
     return new Response(JSON.stringify({ success: true, sid: result.sid }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 200,
     });
   } catch (error) {
-    console.error("send-whatsapp-notification error:", error);
+    console.error("[wa] Unhandled error:", error instanceof Error ? error.stack : String(error));
     return new Response(JSON.stringify({ error: "Internal error" }), {
       headers: { ...corsHeaders, "Content-Type": "application/json" }, status: 500,
     });
